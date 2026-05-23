@@ -2573,9 +2573,7 @@ const IL_CONTACTS = {
   "Cook County Sheriff\'s Police Department Markham Patrol District": {phone:"(708) 756-6060", email:"", website:"https://www.cookcountysheriff.org"},
 };
 
-// Apply ALL contact data to matching agencies
-function applyTXContacts() {
-  const // WV exact names — verified direct lines from agriculture.wv.gov PDF Aug 2025
+
 const WV_CONTACTS_EXACT = {
   "West Virginia State Police Headquarters": {phone:"(304) 746-2100", email:"", website:"https://www.wvsp.gov", accuracy:3},
     "West Virginia State Police Troop 1 Headquarters": {phone:"(304) 592-0111", email:"", website:"https://www.wvsp.gov", accuracy:3},
@@ -2643,6 +2641,7 @@ const WV_CONTACTS_EXACT = {
 };
 
 // VA exact names — verified direct lines from vsp.virginia.gov
+
 const VA_CONTACTS_EXACT = {
   "Virginia State Police Division 1 Area 44 Office": {phone:"(804) 633-6799", email:"area44@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
   "Virginia State Police Division 3 Area 23 Office": {phone:"(434) 476-1887", email:"area23@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
@@ -2699,9 +2698,12 @@ const VA_CONTACTS_EXACT = {
 
 // ── NATIONWIDE 2000+ CONTACTS (non-WV/VA state agencies) ─────────────────────
 // Accuracy 2 = dept main line, not direct substation
+
 const NATIONWIDE_CONTACTS = {};
 
-  ALL_CONTACTS = Object.assign({}, TX_CONTACTS, CA_CONTACTS, GA_CONTACTS, FL_CONTACTS, VA_CONTACTS, MD_CONTACTS, PA_CONTACTS, IL_CONTACTS, WV_CONTACTS, VA_DIRECT_CONTACTS, NATIONWIDE_CONTACTS);
+// Apply ALL contact data to matching agencies
+function applyTXContacts() {
+  ALL_CONTACTS = Object.assign({}, TX_CONTACTS, CA_CONTACTS, GA_CONTACTS, FL_CONTACTS, VA_CONTACTS, MD_CONTACTS, PA_CONTACTS, IL_CONTACTS, WV_CONTACTS_EXACT, VA_CONTACTS_EXACT, NATIONWIDE_CONTACTS);
   AG.forEach(a => {
     const match = ALL_CONTACTS[a.name];
     if(match) {
@@ -2721,6 +2723,7 @@ const NATIONWIDE_CONTACTS = {};
     }
   });
 }
+
 
 // INIT — chunked to keep the browser responsive
 function setProgress(pct, msg) {
