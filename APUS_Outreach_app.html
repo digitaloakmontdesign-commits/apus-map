@@ -6,6 +6,7 @@
 <title>APUS First Responder Outreach</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -707,6 +708,235 @@ input[type=range]{flex:1;accent-color:var(--ac)}
 <script src="agencies.js"></script>
 <script>
 const D = window.AGENCY_DATA || [];
+
+// ===== SUPABASE REAL-TIME SYNC =====
+const SB_URL = 'https://eynauevgqupgzdcyqykw.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5bmF1ZXZncXVwZ3pkY3lxeWt3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODU5OTgsImV4cCI6MjA5NTA2MTk5OH0.rcCJFee9ZdqfVkTLptsVr56VI0dJshE80Sl1IatWP4k';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+// Debounce helper
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+// ---- SAVE functions (write to Supabase) ----
+async function sbSaveAgency(a) {
+  if(a.status === 'uncontacted' && !a.assignee && !a.notes && !a.phone && !a.email && !a.website) return;
+  await sb.from('agency_data').upsert({
+    id: a.id, status: a.status, assignee: a.assignee, type: a.type,
+    notes: a.notes, phone: a.phone, email: a.email, website: a.website,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function sbSaveMOU(m) {
+  await sb.from('mou_data').upsert({
+    id: m.id, name: m.name, type: m.type, scope: m.scope, region: m.region,
+    stage: m.stage, status: m.status, owner: m.owner, support: m.support,
+    signed: m.signed, renewal: m.renewal, lat: m.lat, lng: m.lng, notes: m.notes,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function sbDeleteMOU(id) {
+  await sb.from('mou_data').delete().eq('id', id);
+}
+
+async function sbSaveContacts(repId, weekKey, contacts) {
+  // Delete existing for this rep+week then insert fresh
+  await sb.from('contacts_data').delete().eq('rep_id', repId).eq('week_key', weekKey);
+  if(contacts.length > 0) {
+    await sb.from('contacts_data').insert(contacts.map(c => ({
+      rep_id: repId, week_key: weekKey,
+      contact_name: c.name, title: c.title, org: c.org, state: c.state,
+      email: c.email, phone: c.phone, stage: c.stage, contact_date: c.date,
+      notes: c.notes, next_step: c.nextStep, leader_note: c.leaderNote||'',
+      updated_at: new Date().toISOString()
+    })));
+  }
+}
+
+async function sbSaveMetrics(repId, weekKey, met) {
+  await sb.from('metrics_data').upsert({
+    rep_id: repId, week_key: weekKey,
+    targets: met.targets, comms: met.comms, mtg_set: met.mtg_set,
+    mtg_done: met.mtg_done, opps: met.opps, mou_q: met.mou_q,
+    mou_y: met.mou_y, alliances: met.alliances,
+    updated_at: new Date().toISOString()
+  });
+}
+
+async function sbSaveTasks(repId, tasks) {
+  await sb.from('tasks_data').delete().eq('rep_id', repId);
+  if(tasks.length > 0) {
+    await sb.from('tasks_data').insert(tasks.map(t => ({
+      rep_id: repId, text: t.text, from_name: t.from,
+      created_at: t.dt, done: t.done
+    })));
+  }
+}
+
+async function sbLogActivity(repId, text) {
+  await sb.from('activity_log').insert({
+    rep_id: repId, text: text, created_at: new Date().toISOString()
+  });
+}
+
+// ---- LOAD all data from Supabase ----
+async function sbLoadAll() {
+  try {
+    // Agencies
+    const {data: agData} = await sb.from('agency_data').select('*');
+    if(agData) agData.forEach(r => {
+      const a = AG[r.id]; if(!a) return;
+      a.status = r.status||'uncontacted'; a.assignee = r.assignee;
+      a.type = r.type||'mou'; a.notes = r.notes||'';
+      a.phone = r.phone||''; a.email = r.email||''; a.website = r.website||'';
+    });
+
+    // MOUs
+    const {data: mouData} = await sb.from('mou_data').select('*');
+    if(mouData && mouData.length > 0) {
+      MOUS = mouData.map(m => ({
+        id: m.id, name: m.name, type: m.type, scope: m.scope, region: m.region,
+        stage: m.stage, status: m.status, owner: m.owner, support: m.support,
+        signed: m.signed, renewal: m.renewal, lat: m.lat, lng: m.lng, notes: m.notes
+      }));
+    } else {
+      // First run — seed MOUs to Supabase
+      MOUS = SEED.map((s,i) => ({...s, id:'m'+i}));
+      for(const m of MOUS) await sbSaveMOU(m);
+    }
+
+    // Contacts
+    const {data: conData} = await sb.from('contacts_data').select('*');
+    if(conData) {
+      CONTACTS = {};
+      conData.forEach(r => {
+        if(!CONTACTS[r.rep_id]) CONTACTS[r.rep_id] = {};
+        if(!CONTACTS[r.rep_id][r.week_key]) CONTACTS[r.rep_id][r.week_key] = [];
+        CONTACTS[r.rep_id][r.week_key].push({
+          name: r.contact_name, title: r.title, org: r.org, state: r.state,
+          email: r.email, phone: r.phone, stage: r.stage, date: r.contact_date,
+          notes: r.notes, nextStep: r.next_step, leaderNote: r.leader_note
+        });
+      });
+    }
+
+    // Metrics
+    const {data: metData} = await sb.from('metrics_data').select('*');
+    if(metData) {
+      METRICS = {};
+      metData.forEach(r => {
+        if(!METRICS[r.rep_id]) METRICS[r.rep_id] = {};
+        METRICS[r.rep_id][r.week_key] = {
+          targets: r.targets, comms: r.comms, mtg_set: r.mtg_set,
+          mtg_done: r.mtg_done, opps: r.opps, mou_q: r.mou_q,
+          mou_y: r.mou_y, alliances: r.alliances
+        };
+      });
+    }
+
+    // Tasks
+    const {data: taskData} = await sb.from('tasks_data').select('*');
+    if(taskData) {
+      TASKS = {};
+      taskData.forEach(r => {
+        if(!TASKS[r.rep_id]) TASKS[r.rep_id] = [];
+        TASKS[r.rep_id].push({text: r.text, from: r.from_name, dt: r.created_at, done: r.done});
+      });
+    }
+
+    // Activity
+    const {data: actData} = await sb.from('activity_log').select('*').order('created_at',{ascending:false}).limit(500);
+    if(actData) {
+      aLog = actData.map(r => ({mid: r.rep_id, txt: r.text, dt: r.created_at}));
+    }
+
+    showToast('Synced with team database');
+  } catch(e) {
+    console.error('Supabase load error:', e);
+    showToast('Offline mode — changes saved locally');
+  }
+}
+
+// ---- REAL-TIME subscriptions ----
+function sbSubscribe() {
+  // Agency changes
+  sb.channel('agency-changes').on('postgres_changes',
+    {event:'*', schema:'public', table:'agency_data'},
+    payload => {
+      const r = payload.new; if(!r) return;
+      const a = AG[r.id]; if(!a) return;
+      a.status=r.status||'uncontacted'; a.assignee=r.assignee;
+      a.type=r.type||'mou'; a.notes=r.notes||'';
+      a.phone=r.phone||''; a.email=r.email||''; a.website=r.website||'';
+      rMk(); uSt(parseInt(document.getElementById('mV').textContent.replace(/,/g,''))||0);
+      showToast('Map updated by teammate');
+    }
+  ).subscribe();
+
+  // MOU changes
+  sb.channel('mou-changes').on('postgres_changes',
+    {event:'*', schema:'public', table:'mou_data'},
+    payload => {
+      if(payload.eventType === 'DELETE') {
+        MOUS = MOUS.filter(m => m.id !== payload.old.id);
+      } else {
+        const r = payload.new;
+        const existing = MOUS.find(m => m.id === r.id);
+        const updated = {id:r.id,name:r.name,type:r.type,scope:r.scope,region:r.region,
+          stage:r.stage,status:r.status,owner:r.owner,support:r.support,
+          signed:r.signed,renewal:r.renewal,lat:r.lat,lng:r.lng,notes:r.notes};
+        if(existing) Object.assign(existing, updated);
+        else MOUS.push(updated);
+      }
+      rMouPins();
+      if(document.getElementById('v-mou').classList.contains('active')) renderPipe();
+      showToast('MOU updated by teammate');
+    }
+  ).subscribe();
+
+  // Contacts changes
+  sb.channel('contact-changes').on('postgres_changes',
+    {event:'*', schema:'public', table:'contacts_data'},
+    payload => {
+      // Full reload of contacts on any change
+      sb.from('contacts_data').select('*').then(({data}) => {
+        if(!data) return;
+        CONTACTS = {};
+        data.forEach(r => {
+          if(!CONTACTS[r.rep_id]) CONTACTS[r.rep_id] = {};
+          if(!CONTACTS[r.rep_id][r.week_key]) CONTACTS[r.rep_id][r.week_key] = [];
+          CONTACTS[r.rep_id][r.week_key].push({
+            name:r.contact_name,title:r.title,org:r.org,state:r.state,
+            email:r.email,phone:r.phone,stage:r.stage,date:r.contact_date,
+            notes:r.notes,nextStep:r.next_step,leaderNote:r.leader_note
+          });
+        });
+        if(document.getElementById('v-dash').classList.contains('active')) renderDash();
+      });
+    }
+  ).subscribe();
+}
+
+// Override svAll to use Supabase instead of localStorage
+function svAll() {
+  // Keep localStorage as backup
+  try {
+    const ao={};
+    AG.forEach(a=>{if(a.status!=='uncontacted'||a.assignee||a.notes||a.phone||a.email||a.website)
+      ao[a.id]={status:a.status,assignee:a.assignee,type:a.type,notes:a.notes,phone:a.phone,email:a.email,website:a.website};
+    });
+    localStorage.setItem('apus_v1',JSON.stringify(ao));
+    localStorage.setItem('apus_mous',JSON.stringify(MOUS));
+    localStorage.setItem('apus_act',JSON.stringify(aLog));
+    localStorage.setItem('apus_contacts',JSON.stringify(CONTACTS));
+    localStorage.setItem('apus_metrics',JSON.stringify(METRICS));
+    localStorage.setItem('apus_tasks',JSON.stringify(TASKS));
+  } catch(e) {}
+}
+
 // ===== TEAM =====
 const TM=[
   {id:"josh",    name:"Josh",        role:"B2G Manager",   cat:"b2g",  color:"#3498db",lat:39.158,lng:-75.524, region:"Dover, DE"},
@@ -910,7 +1140,8 @@ function sAg(id){
   a.phone=document.getElementById("ph"+id).value;a.email=document.getElementById("em"+id).value;
   const wbEl=document.getElementById("wb"+id);if(wbEl)a.website=wbEl.value;
   if(a.status!==prev)lgA(a.assignee||"unassigned","Updated <b>"+a.name+"</b> \u2192 "+SLBL[a.status]);
-  svAll();map3.closePopup();rMk();
+  svAll();sbSaveAgency(a);sbLogActivity(a.assignee||"unassigned","Updated <b>"+a.name+"</b> \u2192 "+SLBL[a.status]);
+  map3.closePopup();rMk();
 }
 function rMouPins(){
   mouL.clearLayers();
@@ -1136,9 +1367,9 @@ function saveMOU(){
   if(!d2.name){alert("Name required.");return;}
   if(editMOU)Object.assign(editMOU,d2);else{d2.id="m"+Date.now();MOUS.push(d2);}
   lgA(d2.owner||"unassigned","Saved MOU: <b>"+d2.name+"</b> ["+STAGE_L[d2.stage]+"]");
-  svAll();closeMM();renderPipe();rMouPins();
+  svAll();sbSaveMOU(editMOU||d2);closeMM();renderPipe();rMouPins();
 }
-function delMOU(){if(!editMOU||!confirm("Delete?"))return;MOUS=MOUS.filter(m=>m.id!==editMOU.id);svAll();closeMM();renderPipe();rMouPins();}
+function delMOU(){if(!editMOU||!confirm("Delete?"))return;const delId=editMOU.id;MOUS=MOUS.filter(m=>m.id!==delId);svAll();sbDeleteMOU(delId);closeMM();renderPipe();rMouPins();}
 document.getElementById("mou-search").addEventListener("input",renderPipe);
 document.getElementById("owner-f").addEventListener("change",renderPipe);
 
@@ -1265,7 +1496,7 @@ function renderDash(){
   renderWG(wk);
 }
 
-function saveMet(key,val){const wk=wkKey(wkOffset);getMet(curRep,wk)[key]=Math.max(0,parseInt(val)||0);svAll();}
+function saveMet(key,val){const wk=wkKey(wkOffset);getMet(curRep,wk)[key]=Math.max(0,parseInt(val)||0);svAll();sbSaveMetrics(curRep,wk,getMet(curRep,wk));}
 
 function addTask(){
   const txt=document.getElementById("new-task-txt").value.trim();if(!txt)return;
@@ -1274,9 +1505,9 @@ function addTask(){
   TASKS[curRep].push({text:txt,from:from.name,dt:new Date().toISOString(),done:false});
   lgA(curRep,"Task assigned to <b>"+TM.find(t=>t.id===curRep)?.name+"</b>: "+txt);
   document.getElementById("new-task-txt").value="";
-  svAll();renderDash();
+  svAll();sbSaveTasks(curRep,TASKS[curRep]);renderDash();
 }
-function markTask(repId,idx,done){if(!TASKS[repId]||!TASKS[repId][idx])return;TASKS[repId][idx].done=done;svAll();}
+function markTask(repId,idx,done){if(!TASKS[repId]||!TASKS[repId][idx])return;TASKS[repId][idx].done=done;svAll();sbSaveTasks(repId,TASKS[repId]);}
 function delTask(repId,idx){if(!TASKS[repId])return;TASKS[repId].splice(idx,1);svAll();renderDash();}
 
 function reassignContact(repId,idx,newRepId){
@@ -1362,7 +1593,11 @@ function saveCM(){
   const wk=editConWk||wkKey(wkOffset);const cons=getCons(curRep,wk);
   if(editConIdx>=0)cons[editConIdx]=d2;else cons.push(d2);
   lgA(curRep,"Logged: <b>"+d2.name+"</b> @ "+d2.org+" ["+CSTAGE_L[d2.stage]+"]");
-  svAll();closeCM();renderDash();
+  svAll();
+  const wk2=editConWk||wkKey(wkOffset);
+  sbSaveContacts(curRep,wk2,getCons(curRep,wk2));
+  sbLogActivity(curRep,"Logged: <b>"+d2.name+"</b> @ "+d2.org+" ["+CSTAGE_L[d2.stage]+"]");
+  closeCM();renderDash();
 }
 function delCon(idx){
   const wk=wkKey(wkOffset);const cons=getCons(curRep,wk);
@@ -1788,38 +2023,52 @@ function setProgress(pct, msg) {
 }
 
 function init(){
-  setProgress(5, "Parsing agency data...");
+  setProgress(5, "Connecting to team database...");
 
-  // Step 1: parse + load saved data (sync but fast)
-  ldAll();
+  // Step 1: apply TX contacts first (fast, local)
   applyTXContacts();
 
-  // Step 2: paint the shell UI first (let browser render loading screen)
+  // Step 2: build UI shell
   requestAnimationFrame(() => {
     setProgress(20, "Building team roster...");
-
     setTimeout(() => {
       bTeam();
       setProgress(35, "Initializing map...");
-
       setTimeout(() => {
         iMap();
-        setProgress(55, "Placing team markers...");
-
+        setProgress(50, "Placing team markers...");
         setTimeout(() => {
           aTMk();
-          rMouPins();
-          setProgress(70, "Loading agencies (this takes a moment)...");
-
-          // Step 3: render markers in chunks so UI stays responsive
-          renderMarkersChunked(() => {
-            setProgress(90, "Finalizing...");
-            selRep(TM[0].id);
-            document.getElementById("wk-label").textContent = wkLabel(0);
-            setProgress(100, "Ready!");
-            setTimeout(() => {
-              document.getElementById("ld").style.display = "none";
-            }, 300);
+          setProgress(65, "Syncing team data...");
+          // Step 3: load from Supabase (async)
+          sbLoadAll().then(() => {
+            applyTXContacts();
+            rMouPins();
+            setProgress(80, "Rendering agencies...");
+            renderMarkersChunked(() => {
+              setProgress(95, "Starting real-time sync...");
+              sbSubscribe();
+              selRep(TM[0].id);
+              document.getElementById("wk-label").textContent = wkLabel(0);
+              setProgress(100, "Live — synced with team!");
+              setTimeout(() => {
+                document.getElementById("ld").style.display = "none";
+              }, 300);
+            });
+          }).catch(() => {
+            // Fallback to localStorage if Supabase fails
+            ldAll();
+            applyTXContacts();
+            rMouPins();
+            setProgress(80, "Loading agencies (offline)...");
+            renderMarkersChunked(() => {
+              selRep(TM[0].id);
+              document.getElementById("wk-label").textContent = wkLabel(0);
+              setProgress(100, "Ready (offline mode)");
+              setTimeout(() => {
+                document.getElementById("ld").style.display = "none";
+              }, 300);
+            });
           });
         }, 50);
       }, 50);
