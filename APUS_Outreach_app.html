@@ -704,9 +704,9 @@ input[type=range]{flex:1;accent-color:var(--ac)}
   </div>
 </div>
 
-<script src="agencies.js"></script>
 <script>
-const D = window.AGENCY_DATA;
+const D=
+;
 // ===== TEAM =====
 const TM=[
   {id:"josh",    name:"Josh",        role:"B2G Manager",   cat:"b2g",  color:"#3498db",lat:39.158,lng:-75.524, region:"Dover, DE"},
@@ -1190,17 +1190,25 @@ function renderDash(){
     tp.style.display="block";
     let th='';
     const displayTasks = leaderMode ? tasks : pendingTasks;
-    displayTasks.forEach((tk,i)=>{
-      const isDone=tk.done||false;
-      th+='<div style="display:flex;align-items:flex-start;gap:7px;padding:5px 7px;background:rgba(255,255,255,0.04);border-radius:5px;margin-bottom:4px;border:1px solid var(--br);opacity:'+(isDone?'0.5':'1')+'">'
-        +'<input type="checkbox" '+(isDone?'checked':'')+' style="margin-top:2px;accent-color:var(--ac)" onchange="markTask(''+curRep+'','+i+',this.checked)">'
-        +'<div style="flex:1"><div style="font-size:10px;font-weight:500;'+(isDone?'text-decoration:line-through;color:var(--tm)':'')+'">'+tk.text+'</div>'
-        +(tk.from?'<div style="font-size:9px;color:var(--tm)">From: '+tk.from+'</div>':'')
-        +(tk.dt?'<div style="font-size:9px;color:var(--tm)">'+new Date(tk.dt).toLocaleDateString()+(isDone?' ✔':'')+'</div>':'')
-        +'</div>'
-        +(leaderMode?'<button onclick="delTask(''+curRep+'','+i+')" style="background:none;border:none;color:#555;cursor:pointer;font-size:12px">×</button>':'')
-        +'</div>';
-    });;
+    displayTasks.forEach(function(tk,i){
+      const isDone = tk.done||false;
+      const rep2 = curRep;
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:flex-start;gap:7px;padding:5px 7px;background:rgba(255,255,255,0.04);border-radius:5px;margin-bottom:4px;border:1px solid rgba(255,255,255,0.09);opacity:'+(isDone?'0.5':'1');
+      const cb = document.createElement('input');
+      cb.type='checkbox'; if(isDone)cb.checked=true; cb.style.cssText='margin-top:2px;accent-color:#e8a020';
+      cb.addEventListener('change',function(){markTask(rep2,i,this.checked);});
+      const info = document.createElement('div'); info.style.flex='1';
+      const txt = document.createElement('div');
+      txt.style.cssText='font-size:10px;font-weight:500;'+(isDone?'text-decoration:line-through;color:#8aa3bf':'');
+      txt.textContent = tk.text;
+      info.appendChild(txt);
+      if(tk.from){const f=document.createElement('div');f.style.cssText='font-size:9px;color:#8aa3bf';f.textContent='From: '+tk.from;info.appendChild(f);}
+      if(tk.dt){const d=document.createElement('div');d.style.cssText='font-size:9px;color:#8aa3bf';d.textContent=new Date(tk.dt).toLocaleDateString()+(isDone?' ✔':'');info.appendChild(d);}
+      div.appendChild(cb); div.appendChild(info);
+      if(leaderMode){const btn=document.createElement('button');btn.textContent='×';btn.style.cssText='background:none;border:none;color:#555;cursor:pointer;font-size:12px';btn.addEventListener('click',function(){delTask(rep2,i);});div.appendChild(btn);}
+      const tmp=document.createElement('div');tmp.appendChild(div);th+=tmp.innerHTML;
+    });
     if(leaderMode){
       th+='<div style="display:flex;gap:5px;margin-top:6px"><input id="new-task-txt" type="text" placeholder="Assign task to '+rep.name+'..." style="flex:1;background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:4px 8px;border-radius:4px;font-size:10px"><button onclick="addTask()" style="background:var(--ac);border:none;color:#000;padding:4px 10px;border-radius:4px;font-size:9px;font-weight:700;cursor:pointer">Assign</button></div>';
     }
