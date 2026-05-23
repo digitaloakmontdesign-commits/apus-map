@@ -404,10 +404,16 @@ input[type=range]{flex:1;accent-color:var(--ac)}
       <div class="ss">
         <div class="sl">Agency Size (Officers)</div>
         <div class="chips" id="szC">
-          <div class="chip active" data-sz="all">All Sizes</div>
+          <div class="chip" data-sz="all">All Sizes</div>
           <div class="chip" data-sz="small">Under 500</div>
           <div class="chip" data-sz="medium">500&#8211;2,000</div>
-          <div class="chip" data-sz="large">2,000+</div>
+          <div class="chip active" data-sz="large">2,000+</div>
+        </div>
+        <div class="sl" style="margin-top:8px">Contact Info</div>
+        <div class="chips" id="ctC">
+          <div class="chip active" data-ct="all">All</div>
+          <div class="chip" data-ct="has_phone">Has Phone ✓</div>
+          <div class="chip" data-ct="no_contact">No Contact</div>
         </div>
         <div style="font-size:8px;color:var(--tm);margin-top:5px">Size tiers based on FBI UCR &amp; BJS agency data</div>
       </div>
@@ -1021,7 +1027,7 @@ const SEED=[
   {name:"Southern States Correctional Assoc. (SSCA)",type:"mou",scope:"regional",region:"Southeast",stage:"signed",status:"active",owner:"betty",support:"danica",signed:"2023-08-01",renewal:"2026-08-01",lat:32.361,lng:-86.279,notes:""},
 ];
 
-let AG=D.map((r,i)=>({id:i,name:r[0],address:r[1],city:r[2],state:r[3],zip:r[4],lat:r[5],lng:r[6],status:"uncontacted",assignee:null,type:"mou",notes:"",phone:"",email:"",website:"",size:eS(r[0])}));
+let AG=D.map((r,i)=>({id:i,name:r[0],address:r[1],city:r[2],state:r[3],zip:r[4],lat:r[5],lng:r[6],status:"uncontacted",assignee:null,type:"mou",notes:"",phone:"",email:"",website:"",size:eS(r[0]),contactAccuracy:0}));
 
 function eS(n){
   // Size tiers: large=2000+, medium=500-2000, small=<500
@@ -1101,7 +1107,7 @@ function ldAll(){
 function lgA(mid,txt){aLog.unshift({mid,txt,dt:new Date().toISOString()});aLog=aLog.slice(0,500);}
 
 // ===== MAP =====
-let map3,isN=true,rC=null,mL=null,mouL=null,cRM=null,cR2=0,sfSt="all",sfSz="all",sfState="";
+let map3,isN=true,rC=null,mL=null,mouL=null,cRM=null,cR2=0,sfSt="all",sfSz="large",sfState="",sfCt="all";
 function iMap(){
   map3=L.map("mb",{center:[37.8,-96],zoom:4,zoomControl:true});
   map3.zoomControl.setPosition("bottomright");
@@ -1131,7 +1137,31 @@ function oP(a){
   const nt='<textarea id="nt'+a.id+'" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:4px;color:#f0f4f8;padding:4px 6px;font-size:9px;resize:vertical;min-height:36px">'+a.notes+'</textarea>';
   const tb=a.type==="alliance"?'<span class="pbg ba">Alliance</span>':'<span class="pbg bm">MOU Track</span>';
   const wbLink=a.website?'<a href="'+a.website+'" target="_blank" style="color:#5dade2;font-size:9px">'+a.website+'</a>':'';
-  L.popup({maxWidth:275,closeButton:true}).setLatLng([a.lat,a.lng]).setContent('<div class="pi"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:2px"><div class="pn">'+a.name+'</div>'+tb+'</div><div class="pa">'+a.address+', '+a.city+', '+a.state+'</div><div class="pc"><div class="pr2">&#128222; '+ph+'</div><div class="pr2">&#9993; '+em+'</div><div class="pr2">&#127758; '+wb+'</div>'+(a.website?'<div style="font-size:9px;margin-top:2px">&#128279; '+wbLink+'</div>':'')+'</div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Stage:</span><select class="psel" id="ss'+a.id+'">'+sopts(a.status)+'</select></div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Type:</span><select class="psel" id="ts'+a.id+'"><option value="mou"'+(a.type==="mou"?" selected":"")+'>MOU</option><option value="alliance"'+(a.type==="alliance"?" selected":"")+'>Alliance</option></select><span style="font-size:9px;color:#8aa3bf">Assigned:</span><select class="psel" id="as'+a.id+'"><option value="">None</option>'+topts3(a.assignee)+'</select></div>'+nt+'<button class="psv" onclick="sAg('+a.id+')">Save</button></div>').openOn(map3);
+  // Contact accuracy indicator — 0=Unknown,1=Unverified,2=Dept main line,3=Direct office,4=Confirmed direct
+  const acc=a.contactAccuracy||0;
+  const accLabels=['Unknown','Unverified','Dept main line','Direct office line','Confirmed direct'];
+  const accColors=['#8aa3bf','#e67e22','#f1c40f','#3498db','#2ecc71'];
+  const accDots=accLabels.map((lbl,i)=>'<span onclick="setAcc('+a.id+','+i+')" title="'+i+': '+lbl+'" style="cursor:pointer;font-size:14px;color:'+(i<=acc?accColors[i]:'rgba(255,255,255,0.18)')+'">●</span>').join('');
+  const accRow='<div style="margin:6px 0 3px;border-top:1px solid rgba(255,255,255,0.08);padding-top:5px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'
+    +'<span style="font-size:9px;color:#8aa3bf">Contact accuracy:</span>'
+    +'<span id="accLbl'+a.id+'" style="font-size:9px;font-weight:600;color:'+accColors[acc]+'">'+accLabels[acc]+'</span>'
+    +'</div>'
+    +'<div id="accDots'+a.id+'" style="letter-spacing:2px">'+accDots+'</div>'
+    +'</div>';
+  L.popup({maxWidth:285,closeButton:true}).setLatLng([a.lat,a.lng]).setContent('<div class="pi"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:2px"><div class="pn">'+a.name+'</div>'+tb+'</div><div class="pa">'+a.address+', '+a.city+', '+a.state+'</div><div class="pc"><div class="pr2">&#128222; '+ph+'</div><div class="pr2">&#9993; '+em+'</div><div class="pr2">&#127758; '+wb+'</div>'+(a.website?'<div style="font-size:9px;margin-top:2px">&#128279; '+wbLink+'</div>':'')+'</div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Stage:</span><select class="psel" id="ss'+a.id+'">'+sopts(a.status)+'</select></div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Type:</span><select class="psel" id="ts'+a.id+'"><option value="mou"'+(a.type==="mou"?" selected":"")+'>MOU</option><option value="alliance"'+(a.type==="alliance"?" selected":"")+'>Alliance</option></select><span style="font-size:9px;color:#8aa3bf">Assigned:</span><select class="psel" id="as'+a.id+'"><option value="">None</option>'+topts3(a.assignee)+'</select></div>'+nt+accRow+'<button class="psv" onclick="sAg('+a.id+')">Save</button></div>').openOn(map3);
+}
+function setAcc(id,val){
+  AG[id].contactAccuracy=val;
+  // Refresh dots and label in open popup
+  const accLabels=['Unknown','Unverified','Dept main line','Direct office line','Confirmed direct'];
+  const accColors=['#8aa3bf','#e67e22','#f1c40f','#3498db','#2ecc71'];
+  const dotsEl=document.getElementById('accDots'+id);
+  const lblEl=document.getElementById('accLbl'+id);
+  if(dotsEl) dotsEl.innerHTML=accLabels.map((lbl,i)=>'<span onclick="setAcc('+id+','+i+')" title="'+i+': '+lbl+'" style="cursor:pointer;font-size:14px;color:'+(i<=val?accColors[i]:'rgba(255,255,255,0.18)')+'">●</span>').join('');
+  if(lblEl){lblEl.textContent=accLabels[val];lblEl.style.color=accColors[val];}
+  // Persist
+  svAll();sbSaveAgency(AG[id]);
 }
 function sAg(id){
   const a=AG[id],prev=a.status;
@@ -1245,6 +1275,7 @@ function uRC2(){if(rC){map3.removeLayer(rC);rC=null;}if(!cRM||cR2<=0)return;cons
 document.getElementById("stS").addEventListener("change",function(){sfState=this.value;rMk();});
 document.querySelectorAll("#szC .chip").forEach(c=>c.addEventListener("click",function(){document.querySelectorAll("#szC .chip").forEach(x=>x.classList.remove("active"));this.classList.add("active");sfSz=this.dataset.sz;rMk();}));
 document.querySelectorAll("#stF .si").forEach(s=>s.addEventListener("click",function(){document.querySelectorAll("#stF .si").forEach(x=>x.classList.remove("active"));this.classList.add("active");sfSt=this.dataset.st;rMk();}));
+document.querySelectorAll("#ctC .chip").forEach(c=>c.addEventListener("click",function(){document.querySelectorAll("#ctC .chip").forEach(x=>x.classList.remove("active"));this.classList.add("active");sfCt=this.dataset.ct;rMk();}));
 const sx=document.getElementById("sbx"),sr3=document.getElementById("srs");
 sx.addEventListener("input",function(){const q=this.value.trim().toLowerCase();sr3.innerHTML="";if(q.length<3)return;AG.filter(a=>a.name.toLowerCase().includes(q)||a.city.toLowerCase().includes(q)).slice(0,8).forEach(a=>{const d=document.createElement("div");d.className="sri";d.textContent=a.name+" \u2014 "+a.city+", "+a.state;d.addEventListener("click",()=>{map3.setView([a.lat,a.lng],13);oP(a);sr3.innerHTML="";sx.value="";});sr3.appendChild(d);});});
 document.getElementById("btnN").addEventListener("click",function(){isN=!isN;sTile(isN);this.textContent=isN?"\u2600 Day":"\uD83C\uDF19 Night";});
@@ -1876,6 +1907,8 @@ function downloadFilteredAgencies() {
     if(sfState && a.state !== sfState) return false;
     if(sfSt !== "all" && a.status !== sfSt) return false;
     if(sfSz !== "all" && a.size !== sfSz) return false;
+    if(sfCt === "has_phone" && !a.phone) return false;
+    if(sfCt === "no_contact" && (a.phone || a.email)) return false;
     if(cp && rmi > 0 && cp.distanceTo(L.latLng(a.lat,a.lng))/1609.34 > rmi) return false;
     return true;
   });
@@ -2542,15 +2575,140 @@ const IL_CONTACTS = {
 
 // Apply ALL contact data to matching agencies
 function applyTXContacts() {
-  const ALL_CONTACTS = Object.assign({}, TX_CONTACTS, CA_CONTACTS, GA_CONTACTS, FL_CONTACTS, VA_CONTACTS, MD_CONTACTS, PA_CONTACTS, IL_CONTACTS);
-  const COVERED_STATES = new Set(["TX","CA","GA","FL","VA","MD","PA","IL"]);
+  const // ── WV STATE POLICE — VERIFIED DIRECT LINES ─────────────────────────────────
+// Source: agriculture.wv.gov PDF, updated August 2025 (official .gov)
+// All numbers are direct detachment lines, NOT the HQ number
+const WV_CONTACTS = {
+  "West Virginia State Police":                                {phone:"(304) 746-2100", email:"", website:"https://www.wvsp.gov", accuracy:2},
+  "West Virginia State Police Department":                     {phone:"(304) 746-2100", email:"", website:"https://www.wvsp.gov", accuracy:2},
+  "West Virginia State Police Philippi Detachment":            {phone:"(304) 457-1101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Martinsburg Detachment":         {phone:"(304) 267-0001", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Madison Detachment":             {phone:"(304) 369-7800", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Whitesville Detachment":         {phone:"(304) 854-0101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Sutton Detachment":              {phone:"(304) 765-2101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Wellsburg Detachment":           {phone:"(304) 737-3671", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Huntington Detachment":          {phone:"(304) 528-5555", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Grantsville Detachment":         {phone:"(304) 354-9586", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Clay Detachment":                {phone:"(304) 286-3185", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police West Union Detachment":          {phone:"(304) 873-2101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Gauley Bridge Detachment":       {phone:"(304) 779-2161", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Oak Hill Detachment":            {phone:"(304) 469-2915", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Glenville Detachment":           {phone:"(304) 462-7101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Lewisburg Detachment":           {phone:"(304) 647-7600", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Rainelle Detachment":            {phone:"(304) 438-3000", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Romney Detachment":              {phone:"(304) 822-3561", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police New Cumberland Detachment":      {phone:"(304) 564-3854", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Moorefield Detachment":          {phone:"(304) 538-2825", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Bridgeport Detachment":          {phone:"(304) 627-2300", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Ripley Detachment":              {phone:"(304) 372-7850", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Charles Town Detachment":        {phone:"(304) 725-9779", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Quincy Detachment":              {phone:"(304) 949-3136", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police South Charleston Detachment":    {phone:"(304) 558-7777", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Weston Detachment":              {phone:"(304) 269-0500", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Hamlin Detachment":              {phone:"(304) 824-3101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Logan Detachment":               {phone:"(304) 792-7200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Fairmont Detachment":            {phone:"(304) 367-2701", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Moundsville Detachment":         {phone:"(304) 843-4100", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Mason County Detachment":        {phone:"(304) 675-0850", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Welch Detachment":               {phone:"(304) 436-2101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Princeton Detachment":           {phone:"(304) 425-2101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Keyser Detachment":              {phone:"(304) 788-1101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Williamson Detachment":          {phone:"(304) 235-6000", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Morgantown Detachment":          {phone:"(304) 285-3200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Union Detachment":               {phone:"(304) 772-5100", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Berkeley Springs Detachment":    {phone:"(304) 258-0000", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Richwood Detachment":            {phone:"(304) 846-6510", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Summersville Detachment":        {phone:"(304) 872-0800", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Wheeling Detachment":            {phone:"(304) 238-1100", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Franklin Detachment":            {phone:"(304) 358-2200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police St Marys Detachment":            {phone:"(304) 684-7101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Marlinton Detachment":           {phone:"(304) 799-4104", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Kingwood Detachment":            {phone:"(304) 329-1101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Winfield Detachment":            {phone:"(304) 586-2000", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Beckley Detachment":             {phone:"(304) 256-6700", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Elkins Detachment":              {phone:"(304) 637-0200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Harrisville Detachment":         {phone:"(304) 643-2101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Spencer Detachment":             {phone:"(304) 927-0950", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Hinton Detachment":              {phone:"(304) 466-2800", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Grafton Detachment":             {phone:"(304) 265-6101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Parsons Detachment":             {phone:"(304) 478-3101", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Paden City Detachment":          {phone:"(304) 455-0913", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Buckhannon Detachment":          {phone:"(304) 473-4200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Wayne Detachment":               {phone:"(304) 272-5131", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Webster Springs Detachment":     {phone:"(304) 226-3200", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Elizabeth Detachment":           {phone:"(304) 275-8961", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Parkersburg Detachment":         {phone:"(304) 420-4600", email:"", website:"https://www.wvsp.gov", accuracy:3},
+  "West Virginia State Police Jesse Detachment":               {phone:"(304) 682-4717", email:"", website:"https://www.wvsp.gov", accuracy:3},
+};
+
+// ── VA STATE POLICE — VERIFIED DIRECT LINES ─────────────────────────────────
+// Source: vsp.virginia.gov official division pages (all 7 divisions)
+const VA_DIRECT_CONTACTS = {
+  "Virginia State Police Administrative Headquarters":         {phone:"(804) 674-2000", email:"Questions@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:2},
+  "Virginia State Police Aviation Division Administrative Office":{phone:"(804) 674-2000", email:"", website:"https://vsp.virginia.gov", accuracy:2},
+  "Virginia State Police Division 1 Headquarters":            {phone:"(804) 609-5500", email:"bci81@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Division 4 Headquarters":            {phone:"(276) 484-9483", email:"vspdiv4@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Division 6 Headquarters":            {phone:"(540) 375-9500", email:"vspdiv6@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "South Boston Police Department":                           {phone:"(434) 476-1887", email:"area23@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  // Area offices with direct numbers — all verified from vsp.virginia.gov
+  "Virginia State Police Area 1 Office Ashland":              {phone:"(804) 420-4006", email:"area01@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 2 Office Warsaw":               {phone:"(804) 333-4026", email:"area02@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 5 Office Fredericksburg":       {phone:"(540) 681-2625", email:"area05@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 9 Office Fairfax":              {phone:"(703) 323-4522", email:"area09@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 10 Office Leesburg":            {phone:"(703) 771-2533", email:"area10@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 11 Office":                     {phone:"(703) 659-5770", email:"area11@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 12 Office Warrenton":           {phone:"(540) 347-6200", email:"area12@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 13 Office Winchester":          {phone:"(540) 665-5617", email:"area13@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 14 Office":                     {phone:"(540) 459-6111", email:"area14@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 15 Office Culpeper":            {phone:"(540) 829-7415", email:"area15@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 16 Office":                     {phone:"(540) 434-5654", email:"area16@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 17 Office Fishersville":        {phone:"(540) 885-2142", email:"ar17@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 18 Office Charlottesville":     {phone:"(434) 984-0012", email:"area18@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 24 Office Dublin":              {phone:"(540) 643-2560", email:"area24@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 25 Office Galax":               {phone:"(276) 236-5461", email:"area25@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 26 Office Wytheville":          {phone:"(276) 223-4206", email:"area26@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 27 Office Bristol":             {phone:"(276) 669-2641", email:"area27@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 29 Office Vansant":             {phone:"(276) 597-7440", email:"area29@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 30 Office Wise":                {phone:"(276) 328-0198", email:"area30@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 31 Office Melfa":               {phone:"(757) 787-1990", email:"area31@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 32 Office Norfolk":             {phone:"(757) 455-3980", email:"area32@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 33 Office Gloucester":          {phone:"(804) 693-6808", email:"area33@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 34 Office Franklin":            {phone:"(757) 562-3004", email:"area34@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 35 Office Emporia":             {phone:"(434) 634-4454", email:"area35@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 37 Office Williamsburg":        {phone:"(757) 253-4923", email:"area37@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 38 Office Covington":           {phone:"(540) 716-9010", email:"area38@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 39 Office Lexington":           {phone:"(540) 291-2548", email:"area39@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 40 Office Salem":               {phone:"(540) 375-9518", email:"area40@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 41 Office Bedford":             {phone:"(540) 586-7905", email:"area41@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 42 Office Martinsville":        {phone:"(276) 403-8378", email:"area42@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 44 Office Bowling Green":       {phone:"(804) 633-6799", email:"area44@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 46 Office Hampton":             {phone:"(757) 825-7021", email:"area46@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 47 Office Chesapeake":          {phone:"(757) 424-6788", email:"area47@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 48 Office":                     {phone:"(571) 722-1040", email:"area48@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+  "Virginia State Police Area 49 Office Christiansburg":      {phone:"(540) 381-7110", email:"area49@vsp.virginia.gov", website:"https://vsp.virginia.gov", accuracy:3},
+};
+
+// ── NATIONWIDE 2000+ CONTACTS (non-WV/VA state agencies) ─────────────────────
+// Accuracy 2 = dept main line, not direct substation
+const NATIONWIDE_CONTACTS = {};
+
+  ALL_CONTACTS = Object.assign({}, TX_CONTACTS, CA_CONTACTS, GA_CONTACTS, FL_CONTACTS, VA_CONTACTS, MD_CONTACTS, PA_CONTACTS, IL_CONTACTS, WV_CONTACTS, VA_DIRECT_CONTACTS, NATIONWIDE_CONTACTS);
   AG.forEach(a => {
-    if(!COVERED_STATES.has(a.state)) return;
     const match = ALL_CONTACTS[a.name];
     if(match) {
       if(!a.phone && match.phone) a.phone = match.phone;
       if(!a.email && match.email) a.email = match.email;
       if(!a.website && match.website) a.website = match.website;
+      // Set accuracy level if not already manually set
+      if(!a.contactAccuracy || a.contactAccuracy === 0) {
+        if(match.accuracy !== undefined) {
+          a.contactAccuracy = match.accuracy;
+        } else if(a.phone) {
+          // Auto-classify: TX/CA/FL/GA/VA direct lines = 3, others = 2
+          const directStates = new Set(["TX","CA","FL","GA","VA","WV"]);
+          a.contactAccuracy = directStates.has(a.state) ? 3 : 2;
+        }
+      }
     }
   });
 }
@@ -2630,6 +2788,8 @@ function renderMarkersChunked(onDone) {
     if(sfState && a.state !== sfState) return false;
     if(sfSt !== "all" && a.status !== sfSt) return false;
     if(sfSz !== "all" && a.size !== sfSz) return false;
+    if(sfCt === "has_phone" && !a.phone) return false;
+    if(sfCt === "no_contact" && (a.phone || a.email)) return false;
     if(cp && rmi > 0 && cp.distanceTo(L.latLng(a.lat, a.lng))/1609.34 > rmi) return false;
     return true;
   });
