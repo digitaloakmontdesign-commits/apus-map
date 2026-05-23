@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APUS First Responder Outreach</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --nv:#0d1b2a;--nm:#1a2e45;--nl:#1e3550;
+  --ac:#e8a020;--acd:#c47a10;
+  --tx:#f0f4f8;--tm:#8aa3bf;
+  --pan:rgba(13,27,42,0.97);--br:rgba(255,255,255,0.09);
+  --sw:296px;
+  --green:#2ecc71;--blue:#3498db;--orange:#e67e22;--red:#e74c3c;--purple:#9b59b6;--yellow:#f1c40f;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--nv);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+/* NAV */
+#nav{height:48px;background:var(--nv);border-bottom:1px solid var(--br);display:flex;align-items:center;padding:0 14px;gap:0;flex-shrink:0;z-index:1000}
+.logo{font-size:10px;font-weight:700;letter-spacing:.1em;color:var(--ac);text-transform:uppercase;white-space:nowrap;margin-right:16px}
+.navtab{height:100%;display:flex;align-items:center;padding:0 14px;font-size:10px;font-weight:500;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;gap:5px}
+.navtab:hover{color:var(--tx)}.navtab.active{color:var(--ac);border-bottom-color:var(--ac)}
+.nsep{width:1px;height:18px;background:var(--br);margin:0 6px}
+.nstat{font-size:10px;color:var(--tm);white-space:nowrap}.nstat b{color:var(--tx)}
+.nsp{flex:1}
+#btnN{background:none;border:1px solid var(--br);color:var(--tm);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:10px}
+#btnN:hover{border-color:var(--ac);color:var(--ac)}
+/* VIEWS */
+.view{display:none;flex:1;overflow:hidden}
+.view.active{display:flex}
+/* MAP SIDEBAR */
+#sb{width:var(--sw);background:var(--pan);border-right:1px solid var(--br);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#mb{flex:1;position:relative}
+#sbs{flex:1;overflow-y:auto}
+#sbs::-webkit-scrollbar{width:3px}
+#sbs::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:2px}
+.ss{border-bottom:1px solid var(--br);padding:10px 12px}
+.sl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);margin-bottom:6px}
+/* TEAM GROUPS */
+.tgroup-hdr{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 3px;cursor:pointer;border-radius:4px;margin-bottom:2px}
+.tgroup-hdr:hover{background:rgba(255,255,255,0.04)}
+.tgroup-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm)}
+.tgroup-arrow{font-size:9px;color:var(--tm);transition:transform .15s}
+.tgroup-arrow.open{transform:rotate(90deg)}
+.tgroup-items{display:flex;flex-direction:column;gap:2px;margin-bottom:4px}
+.tgroup-items.collapsed{display:none}
+.mb2{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:5px;border:1px solid transparent;cursor:pointer;background:transparent;color:var(--tx);width:100%;text-align:left;transition:background .12s}
+.mb2:hover{background:rgba(255,255,255,0.05)}
+.mb2.active{background:rgba(255,255,255,0.08);border-color:var(--br)}
+.md{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mn{font-size:11px;font-weight:500;flex:1}
+.mr2{font-size:9px;color:var(--tm)}
+.mc{font-size:9px;color:var(--tm);background:rgba(255,255,255,0.07);padding:1px 5px;border-radius:7px}
+.fr{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.fr label{font-size:10px;color:var(--tm);min-width:52px}
+select{background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:4px 6px;border-radius:4px;font-size:10px;flex:1;cursor:pointer}
+select:focus{outline:none;border-color:var(--ac)}
+option{background:#1a2e45}
+input[type=range]{flex:1;accent-color:var(--ac)}
+.rv{font-size:11px;font-weight:600;color:var(--ac);min-width:40px;text-align:right}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{padding:3px 8px;border-radius:9px;border:1px solid var(--br);font-size:9px;cursor:pointer;color:var(--tm);transition:all .12s}
+.chip.active{background:var(--ac);border-color:var(--ac);color:#000;font-weight:700}
+.sleg{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.si{display:flex;align-items:center;gap:5px;font-size:10px;cursor:pointer;padding:3px 5px;border-radius:4px;border:1px solid transparent}
+.si:hover{background:rgba(255,255,255,0.04)}
+.si.active{border-color:var(--br);background:rgba(255,255,255,0.06)}
+.sdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+#sbx{width:100%;background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:5px 8px;border-radius:5px;font-size:10px}
+#sbx::placeholder{color:var(--tm)}
+#sbx:focus{outline:none;border-color:var(--ac)}
+#srs{max-height:110px;overflow-y:auto;margin-top:4px}
+.sri{padding:4px 6px;font-size:10px;cursor:pointer;border-radius:3px}
+.sri:hover{background:rgba(255,255,255,0.07)}
+/* ACTIVITY PANEL */
+#ap{position:absolute;top:12px;right:12px;width:278px;background:var(--pan);border:1px solid var(--br);border-radius:10px;z-index:800;display:none;overflow:hidden}
+#ah{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid var(--br)}
+#ah h3{font-size:12px;font-weight:600}
+#ac2{background:none;border:none;color:var(--tm);cursor:pointer;font-size:16px;line-height:1}
+.atr{display:flex;gap:3px;padding:6px 12px 0}
+.at{background:rgba(255,255,255,0.06);border:1px solid var(--br);border-radius:4px;padding:3px 8px;font-size:9px;cursor:pointer;color:var(--tm)}
+.at.active{background:var(--ac);border-color:var(--ac);color:#000;font-weight:700}
+#ab{padding:9px 12px;max-height:300px;overflow-y:auto}
+.awk{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:4px}
+.ai{display:flex;gap:5px;margin-bottom:7px;align-items:flex-start}
+.aid{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.ait{font-size:10px;line-height:1.5;color:var(--tm)}.ait b{color:var(--tx)}
+#mst{position:absolute;bottom:12px;left:10px;background:var(--pan);border:1px solid var(--br);border-radius:7px;padding:5px 11px;z-index:800;display:flex;gap:12px}
+.ms{display:flex;flex-direction:column;align-items:center}
+.msv{font-size:13px;font-weight:700;color:var(--ac)}
+.msl{font-size:8px;color:var(--tm);text-transform:uppercase;letter-spacing:.05em}
+/* POPUP */
+.leaflet-popup-content-wrapper{background:#1a2e45;border:1px solid rgba(255,255,255,0.12);border-radius:9px;color:#f0f4f8;box-shadow:0 8px 32px rgba(0,0,0,0.6)}
+.leaflet-popup-tip{background:#1a2e45}
+.leaflet-popup-content{margin:0;padding:0;width:265px!important}
+.pi{padding:11px 13px}
+.pn{font-size:11px;font-weight:600;margin-bottom:3px;line-height:1.4}
+.pa{font-size:9px;color:#8aa3bf;margin-bottom:7px}
+.pc{background:rgba(255,255,255,0.05);border-radius:6px;padding:7px 9px;margin-bottom:7px}
+.pr2{display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:4px}
+.psr{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:5px}
+.psel{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#f0f4f8;padding:3px 5px;border-radius:4px;font-size:9px;cursor:pointer}
+.psv{background:var(--ac);border:none;color:#000;padding:5px 0;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;width:100%;margin-top:5px}
+.psv:hover{background:#c47a10}
+.pbg{font-size:8px;padding:2px 5px;border-radius:6px;font-weight:700;text-transform:uppercase}
+.bm{background:rgba(52,152,219,.2);color:#5dade2;border:1px solid rgba(52,152,219,.3)}
+.ba{background:rgba(155,89,182,.2);color:#bb8fce;border:1px solid rgba(155,89,182,.3)}
+.leaflet-popup-close-button{color:#8aa3bf!important;font-size:15px!important}
+/* MOU VIEW */
+#mou-tb{display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--br);flex-shrink:0;flex-wrap:wrap}
+.mtab{padding:4px 12px;border-radius:6px;border:1px solid var(--br);font-size:10px;cursor:pointer;color:var(--tm);transition:all .12s;white-space:nowrap}
+.mtab.active{background:var(--ac);border-color:var(--ac);color:#000;font-weight:600}
+.mt-sep{width:1px;height:16px;background:var(--br)}
+#mou-search{background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:4px 9px;border-radius:5px;font-size:10px;width:160px}
+#mou-search::placeholder{color:var(--tm)}
+#mou-search:focus{outline:none;border-color:var(--ac)}
+#btn-add{background:var(--ac);border:none;color:#000;padding:4px 12px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer}
+#btn-add:hover{background:var(--acd)}
+#mou-body{display:flex;flex:1;overflow:hidden}
+#pipeline{display:flex;flex:1;overflow-x:auto;overflow-y:hidden;padding:14px 16px;gap:10px}
+.pipe-col{display:flex;flex-direction:column;min-width:220px;max-width:250px;flex:1}
+.ph{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:7px 7px 0 0}
+.ph-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.ph-lbl{font-size:10px;font-weight:600;flex:1}
+.ph-cnt{font-size:9px;color:var(--tm);background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:7px}
+.pcards{flex:1;overflow-y:auto;padding:7px 5px;background:rgba(255,255,255,0.025);border-radius:0 0 7px 7px;border:1px solid var(--br);border-top:0;display:flex;flex-direction:column;gap:6px}
+.pcards::-webkit-scrollbar{width:2px}
+.pcards::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:1px}
+.mou-card{background:var(--pan);border:1px solid var(--br);border-radius:7px;padding:9px 11px;cursor:pointer;transition:border-color .12s,transform .1s;position:relative}
+.mou-card:hover{border-color:rgba(255,255,255,0.2);transform:translateY(-1px)}
+.mou-card.r90{border-left:3px solid var(--yellow)}
+.mou-card.r60{border-left:3px solid var(--orange)}
+.mou-card.r30{border-left:3px solid var(--red)}
+.mou-card.rlapsed{opacity:.5;border-left:3px solid #555}
+.mc-name{font-size:10px;font-weight:600;margin-bottom:2px;line-height:1.3}
+.mc-type{display:inline-flex;align-items:center;font-size:8px;padding:1px 5px;border-radius:4px;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+.mc-type.mou{background:rgba(52,152,219,.15);color:#5dade2;border:1px solid rgba(52,152,219,.2)}
+.mc-type.alliance{background:rgba(155,89,182,.15);color:#bb8fce;border:1px solid rgba(155,89,182,.2)}
+.mc-meta{font-size:9px;color:var(--tm);display:flex;flex-direction:column;gap:2px}
+.mc-owner{display:flex;align-items:center;gap:4px;margin-top:5px;flex-wrap:wrap}
+.mc-dot{width:5px;height:5px;border-radius:50%}
+.mc-own-name{font-size:9px;color:var(--tm)}
+.rbadge{position:absolute;top:7px;right:7px;font-size:7px;padding:1px 4px;border-radius:3px;font-weight:700}
+.rb90{background:rgba(241,196,15,.15);color:#f1c40f;border:1px solid rgba(241,196,15,.3)}
+.rb60{background:rgba(230,126,34,.15);color:#e67e22;border:1px solid rgba(230,126,34,.3)}
+.rb30{background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.3)}
+.rblap{background:rgba(100,100,100,.2);color:#888;border:1px solid rgba(100,100,100,.3)}
+/* SP SIDEBAR */
+#sp-sb{width:260px;background:var(--pan);border-left:1px solid var(--br);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+#sp-hdr{padding:11px 13px;border-bottom:1px solid var(--br)}
+#sp-hdr h3{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--ac);margin-bottom:1px}
+#sp-hdr p{font-size:9px;color:var(--tm)}
+#sp-list{flex:1;overflow-y:auto;padding:7px}
+#sp-list::-webkit-scrollbar{width:2px}
+#sp-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:1px}
+.sp-item{padding:7px 9px;border-radius:6px;border:1px solid var(--br);margin-bottom:5px;cursor:pointer;transition:border-color .12s}
+.sp-item:hover{border-color:rgba(255,255,255,0.18)}
+.sp-name{font-size:10px;font-weight:600;margin-bottom:2px;line-height:1.3}
+.sp-meta{font-size:9px;color:var(--tm);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.sp-st{padding:1px 4px;border-radius:3px;font-size:7px;font-weight:700}
+.sp-active{background:rgba(46,204,113,.15);color:#2ecc71;border:1px solid rgba(46,204,113,.25)}
+.sp-renew{background:rgba(241,196,15,.15);color:#f1c40f;border:1px solid rgba(241,196,15,.25)}
+.sp-lapsed{background:rgba(231,76,60,.15);color:#e74c3c;border:1px solid rgba(231,76,60,.25)}
+/* MOU MODAL */
+#mm{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center;z-index:2000}
+#mm.open{display:flex}
+#mmi{background:#1a2e45;border:1px solid var(--br);border-radius:12px;width:500px;max-height:82vh;overflow-y:auto;padding:0}
+#mmh{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--br)}
+#mmh h2{font-size:13px;font-weight:600}
+#mmc{background:none;border:none;color:var(--tm);cursor:pointer;font-size:19px;line-height:1}
+#mmb{padding:18px}
+.mm-sec{margin-bottom:16px}
+.mm-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tm);margin-bottom:7px}
+.mm-row{display:flex;gap:10px;margin-bottom:9px}
+.mm-f{display:flex;flex-direction:column;gap:3px;flex:1}
+.mm-f label{font-size:9px;color:var(--tm)}
+.mm-f input,.mm-f select,.mm-f textarea{background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:5px 8px;border-radius:4px;font-size:10px;width:100%}
+.mm-f input:focus,.mm-f select:focus,.mm-f textarea:focus{outline:none;border-color:var(--ac)}
+.mm-f textarea{resize:vertical;min-height:55px;font-family:inherit}
+.mm-f select option{background:#1a2e45}
+.lc-bar{display:flex;border-radius:5px;overflow:hidden;margin-bottom:7px}
+.lc-s{flex:1;padding:5px 3px;text-align:center;font-size:8px;font-weight:600;text-transform:uppercase;cursor:pointer;transition:all .12s;color:var(--tm);background:rgba(255,255,255,0.05);border-right:1px solid var(--br)}
+.lc-s:last-child{border-right:none}
+.lc-s[data-s="prospecting"].on{background:#5a7a9a;color:#fff}
+.lc-s[data-s="negotiating"].on{background:#f39c12;color:#000}
+.lc-s[data-s="signed"].on{background:#2ecc71;color:#000}
+.lc-s[data-s="renewal_due"].on{background:#e67e22;color:#000}
+.lc-s[data-s="lapsed"].on{background:#888;color:#fff}
+#mm-save{background:var(--ac);border:none;color:#000;padding:7px 0;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;width:100%;margin-top:3px}
+#mm-del{background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);color:#e74c3c;padding:7px 14px;border-radius:5px;font-size:10px;cursor:pointer;display:none}
+.alert-b{border-radius:5px;padding:7px 10px;font-size:10px;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.a90{background:rgba(241,196,15,.1);border:1px solid rgba(241,196,15,.3);color:#f1c40f}
+.a60{background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.3);color:#e67e22}
+.a30{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:#e74c3c}
+.alap{background:rgba(100,100,100,.1);border:1px solid rgba(100,100,100,.3);color:#aaa}
+/* ====== STAGE 3: ACTIVITY DASHBOARD ====== */
+#dash{flex:1;display:flex;overflow:hidden;flex-direction:column}
+#dash-hdr{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid var(--br);flex-shrink:0;flex-wrap:wrap}
+#dash-hdr h2{font-size:12px;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:.07em}
+.wk-nav{display:flex;align-items:center;gap:6px}
+.wk-btn{background:none;border:1px solid var(--br);color:var(--tm);padding:3px 9px;border-radius:4px;cursor:pointer;font-size:10px}
+.wk-btn:hover{border-color:var(--ac);color:var(--ac)}
+#wk-label{font-size:11px;font-weight:600;color:var(--tx);min-width:150px;text-align:center}
+#dash-body{display:flex;flex:1;overflow:hidden}
+/* LEFT - REP LIST */
+#rep-list{width:220px;background:var(--pan);border-right:1px solid var(--br);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#rep-list-hdr{padding:10px 12px;border-bottom:1px solid var(--br);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tm)}
+#rep-items{flex:1;overflow-y:auto;padding:6px}
+#rep-items::-webkit-scrollbar{width:2px}
+#rep-items::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:1px}
+.rep-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;border:1px solid transparent;cursor:pointer;margin-bottom:3px;transition:background .12s}
+.rep-item:hover{background:rgba(255,255,255,0.05)}
+.rep-item.active{background:rgba(255,255,255,0.08);border-color:var(--br)}
+.rep-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.rep-name{font-size:11px;font-weight:500;flex:1}
+.rep-role{font-size:9px;color:var(--tm)}
+.rep-score{font-size:10px;font-weight:600;color:var(--ac)}
+/* CENTER - METRICS + CONTACTS */
+#dash-center{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#metrics-row{display:grid;grid-template-columns:repeat(8,1fr);gap:7px;padding:12px 16px;border-bottom:1px solid var(--br);flex-shrink:0}
+.met-card{background:rgba(255,255,255,0.04);border:1px solid var(--br);border-radius:7px;padding:8px 10px;text-align:center}
+.met-val{font-size:18px;font-weight:700;color:var(--ac);cursor:pointer;outline:none;background:transparent;border:none;width:100%;text-align:center;padding:0}
+.met-val:focus{color:#fff}
+.met-lbl{font-size:8px;color:var(--tm);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;line-height:1.3}
+/* CONTACT LOG */
+#contacts-area{flex:1;overflow:hidden;display:flex;flex-direction:column}
+#contacts-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--br);flex-shrink:0}
+#contacts-hdr span{font-size:10px;font-weight:600;color:var(--tx)}
+#btn-add-contact{background:var(--ac);border:none;color:#000;padding:3px 10px;border-radius:4px;font-size:9px;font-weight:700;cursor:pointer}
+#contacts-list{flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+#contacts-list::-webkit-scrollbar{width:3px}
+#contacts-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+.contact-row{background:rgba(255,255,255,0.04);border:1px solid var(--br);border-radius:7px;padding:9px 12px;display:flex;align-items:center;gap:10px}
+.cr-stage{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cr-info{flex:1;min-width:0}
+.cr-name{font-size:11px;font-weight:500;margin-bottom:1px}
+.cr-org{font-size:9px;color:var(--tm)}
+.cr-stage-lbl{font-size:9px;padding:1px 6px;border-radius:4px;font-weight:600;white-space:nowrap}
+.cr-date{font-size:9px;color:var(--tm);white-space:nowrap}
+.cr-del{background:none;border:none;color:#555;cursor:pointer;font-size:13px;padding:0 2px}
+.cr-del:hover{color:var(--red)}
+.cr-edit{background:none;border:none;color:#555;cursor:pointer;font-size:11px;padding:0 2px}
+.cr-edit:hover{color:var(--ac)}
+/* RIGHT - WEEKLY GRID */
+#weekly-grid{width:240px;background:var(--pan);border-left:1px solid var(--br);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+#wg-hdr{padding:10px 12px;border-bottom:1px solid var(--br);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tm)}
+#wg-body{flex:1;overflow-y:auto;padding:8px}
+#wg-body::-webkit-scrollbar{width:2px}
+#wg-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:1px}
+.wg-rep{margin-bottom:10px;border-radius:6px;border:1px solid var(--br);overflow:hidden}
+.wg-rep-hdr{display:flex;align-items:center;gap:5px;padding:5px 8px;background:rgba(255,255,255,0.04)}
+.wg-rep-name{font-size:9px;font-weight:600;flex:1}
+.wg-bar{height:4px;border-radius:2px;margin:4px 8px 6px;background:rgba(255,255,255,0.05)}
+.wg-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+.wg-nums{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:0 8px 7px}
+.wg-num{text-align:center}
+.wg-nv{font-size:11px;font-weight:600;color:var(--ac)}
+.wg-nl{font-size:7px;color:var(--tm);text-transform:uppercase}
+/* CONTACT MODAL */
+#cm{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:none;align-items:center;justify-content:center;z-index:2000}
+#cm.open{display:flex}
+#cmi{background:#1a2e45;border:1px solid var(--br);border-radius:10px;width:420px;padding:0;overflow:hidden}
+#cmh{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--br)}
+#cmh h3{font-size:13px;font-weight:600}
+#cmc{background:none;border:none;color:var(--tm);cursor:pointer;font-size:18px;line-height:1}
+#cmb{padding:16px;display:flex;flex-direction:column;gap:9px}
+.cm-row{display:flex;gap:8px}
+.cm-f{display:flex;flex-direction:column;gap:3px;flex:1}
+.cm-f label{font-size:9px;color:var(--tm)}
+.cm-f input,.cm-f select,.cm-f textarea{background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:5px 8px;border-radius:4px;font-size:10px;width:100%}
+.cm-f input:focus,.cm-f select:focus,.cm-f textarea:focus{outline:none;border-color:var(--ac)}
+.cm-f select option{background:#1a2e45}
+.cm-f textarea{resize:vertical;min-height:50px;font-family:inherit}
+#cm-save{background:var(--ac);border:none;color:#000;padding:7px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;width:100%}
+
+/* ===== EXECUTIVE VIEW ===== */
+#v-exec { flex-direction:column; overflow-y:auto; }
+#exec-wrap { padding:20px 24px; max-width:1400px; width:100%; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
+.exec-hdr { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.exec-hdr h1 { font-size:16px; font-weight:700; color:var(--ac); letter-spacing:.06em; text-transform:uppercase; }
+.exec-hdr p { font-size:10px; color:var(--tm); margin-top:2px; }
+.exec-datestamp { font-size:10px; color:var(--tm); text-align:right; }
+/* KPI ROW */
+.kpi-row { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+.kpi-card { background:var(--pan); border:1px solid var(--br); border-radius:10px; padding:14px 16px; text-align:center; position:relative; overflow:hidden; }
+.kpi-card::before { content:""; position:absolute; top:0; left:0; right:0; height:3px; }
+.kpi-card.kc-blue::before { background:#3498db; }
+.kpi-card.kc-green::before { background:#2ecc71; }
+.kpi-card.kc-orange::before { background:#e67e22; }
+.kpi-card.kc-purple::before { background:#9b59b6; }
+.kpi-card.kc-gold::before { background:#e8a020; }
+.kpi-card.kc-teal::before { background:#1abc9c; }
+.kpi-val { font-size:28px; font-weight:700; color:var(--tx); line-height:1; }
+.kpi-lbl { font-size:9px; color:var(--tm); text-transform:uppercase; letter-spacing:.08em; margin-top:4px; }
+.kpi-delta { font-size:9px; margin-top:3px; }
+.kpi-delta.up { color:#2ecc71; }
+.kpi-delta.down { color:#e74c3c; }
+/* TWO COL */
+.exec-2col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.exec-3col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.exec-card { background:var(--pan); border:1px solid var(--br); border-radius:10px; padding:0; overflow:hidden; }
+.ec-hdr { padding:11px 14px; border-bottom:1px solid var(--br); display:flex; align-items:center; justify-content:space-between; }
+.ec-hdr h3 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--tm); }
+.ec-hdr span { font-size:9px; color:var(--tm); }
+.ec-body { padding:12px 14px; }
+/* REP SCOREBOARD */
+.rep-score-row { display:flex; align-items:center; gap:9px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.rep-score-row:last-child { border-bottom:none; }
+.rs-rank { font-size:10px; font-weight:700; color:var(--tm); min-width:16px; }
+.rs-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.rs-name { font-size:11px; font-weight:500; flex:1; }
+.rs-bar-wrap { width:100px; height:5px; background:rgba(255,255,255,0.07); border-radius:3px; }
+.rs-bar { height:100%; border-radius:3px; transition:width .4s; }
+.rs-score { font-size:10px; font-weight:600; color:var(--ac); min-width:28px; text-align:right; }
+/* PIPELINE FUNNEL */
+.funnel-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.funnel-label { font-size:10px; color:var(--tm); min-width:110px; text-align:right; }
+.funnel-bar-wrap { flex:1; height:18px; background:rgba(255,255,255,0.04); border-radius:4px; overflow:hidden; }
+.funnel-bar { height:100%; border-radius:4px; display:flex; align-items:center; justify-content:flex-end; padding-right:7px; transition:width .5s; }
+.funnel-num { font-size:9px; font-weight:700; color:#fff; }
+/* TREND CHART */
+.trend-chart { position:relative; height:130px; margin-top:6px; }
+.trend-svg { width:100%; height:100%; }
+/* MOU ALERTS */
+.alert-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:10px; }
+.alert-row:last-child { border-bottom:none; }
+.alert-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.alert-name { flex:1; line-height:1.3; }
+.alert-badge { font-size:8px; padding:1px 5px; border-radius:3px; font-weight:700; white-space:nowrap; }
+/* ALLIANCE VS MOU PIE-LIKE */
+.donut-wrap { display:flex; align-items:center; gap:14px; padding:4px 0; }
+.donut-svg { flex-shrink:0; }
+.donut-legend { display:flex; flex-direction:column; gap:5px; font-size:10px; }
+.dl-item { display:flex; align-items:center; gap:6px; }
+.dl-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+/* STATE HEAT */
+.state-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(36px,1fr)); gap:3px; }
+.sg-cell { padding:3px 2px; text-align:center; border-radius:3px; font-size:8px; font-weight:600; cursor:pointer; transition:opacity .12s; }
+.sg-cell:hover { opacity:.75; }
+
+/* LOADING */
+#ld{position:fixed;inset:0;background:#0d1b2a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;z-index:9999}
+#lbw{width:160px;height:3px;background:rgba(255,255,255,0.1);border-radius:2px}
+#lb{height:100%;background:#e8a020;border-radius:2px;width:0;transition:width .4s}
+#lm{font-size:10px;color:#8aa3bf}
+#lt{font-size:12px;font-weight:700;letter-spacing:.1em;color:#e8a020;text-transform:uppercase}
+
+
+/* DRAG & DROP */
+.mou-card.dragging { opacity:0.4; transform:scale(0.97); cursor:grabbing; }
+.mou-card { cursor:grab; }
+.pcards.drag-over { background:rgba(232,160,32,0.07); border-color:rgba(232,160,32,0.3); outline:2px dashed rgba(232,160,32,0.3); }
+.pipe-col.drop-ready .pcards { box-shadow:0 0 0 2px rgba(232,160,32,0.4); }
+
+
+.task-done-row { opacity: 0.45; }
+.task-done-row .task-text { text-decoration: line-through; }
+
+/* EXTRA V3 CSS */
+#dash-center { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#tasks-panel { background:rgba(232,160,32,0.04); }
+.wg-rep { cursor:pointer; transition:background .12s; }
+.wg-rep:hover { background:rgba(255,255,255,0.03); }
+#cm-tip { animation: fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+<div id="ld"><div id="lt">APUS Outreach</div><div id="lbw"><div id="lb"></div></div><div id="lm">Loading...</div></div>
+<div id="nav">
+  <div class="logo">&#11042; APUS</div>
+  <div class="navtab active" onclick="sv('map')" id="nt-map">&#127758; Territory Map</div>
+  <div class="navtab" onclick="sv('mou')" id="nt-mou">&#128203; MOU &amp; Alliances</div>
+  <div class="navtab" onclick="sv('dash')" id="nt-dash">&#128200; Activity Dashboard</div>
+  <div class="navtab" onclick="sv('exec')" id="nt-exec">&#127775; Executive View</div>
+  <div class="nsep"></div>
+  <div class="nstat">Agencies: <b id="sT">&#8212;</b></div>
+  <div class="nstat">Vis: <b id="sV">&#8212;</b></div>
+  <div class="nstat">MOUs: <b id="sM">&#8212;</b></div>
+  <div class="nstat">Alliances: <b id="sA">&#8212;</b></div>
+  <div class="nsp"></div>
+  <button id="btnN">&#9728; Day</button>
+</div>
+
+<!-- MAP VIEW -->
+<div id="v-map" class="view active" style="flex-direction:row">
+  <div id="sb">
+    <div id="sbs">
+      <div class="ss"><div class="sl">Team</div><div id="tl"></div></div>
+      <div class="ss"><div class="sl">State</div><div class="fr"><select id="stS"><option value="">All States</option></select></div></div>
+      <div class="ss">
+        <div class="sl">Territory Radius</div>
+        <div class="fr"><label>Member</label><select id="rm"><option value="">&#8212; Select &#8212;</option></select></div>
+        <div class="fr"><label>Radius</label><input type="range" id="rs" min="0" max="500" step="25" value="0"><span class="rv" id="rv">Off</span></div>
+        <div class="chips" style="margin-top:3px">
+          <div class="chip" onclick="sR(25)">25mi</div><div class="chip" onclick="sR(50)">50mi</div>
+          <div class="chip" onclick="sR(100)">100mi</div><div class="chip" onclick="sR(150)">150mi</div>
+          <div class="chip" onclick="sR(250)">250mi</div><div class="chip" onclick="sR(0)">Clear</div>
+        </div>
+      </div>
+      <div class="ss">
+        <div class="sl">Agency Size (Officers)</div>
+        <div class="chips" id="szC">
+          <div class="chip active" data-sz="all">All Sizes</div>
+          <div class="chip" data-sz="small">Under 500</div>
+          <div class="chip" data-sz="medium">500&#8211;2,000</div>
+          <div class="chip" data-sz="large">2,000+</div>
+        </div>
+        <div style="font-size:8px;color:var(--tm);margin-top:5px">Size tiers based on FBI UCR &amp; BJS agency data</div>
+      </div>
+      <div class="ss">
+        <div class="sl">Outreach Stage</div>
+        <div class="sleg" id="stF">
+          <div class="si active" data-st="all"><div class="sdot" style="background:#888"></div>All</div>
+          <div class="si" data-st="uncontacted"><div class="sdot" style="background:#444"></div>Uncontacted</div>
+          <div class="si" data-st="discovery"><div class="sdot" style="background:#3498db"></div>Discovery</div>
+          <div class="si" data-st="engaged"><div class="sdot" style="background:#2ecc71"></div>Engaged</div>
+          <div class="si" data-st="followup"><div class="sdot" style="background:#f1c40f"></div>Follow-Up</div>
+          <div class="si" data-st="mou_progress"><div class="sdot" style="background:#e67e22"></div>MOU Progress</div>
+          <div class="si" data-st="mou_signed"><div class="sdot" style="background:#5dade2"></div>MOU Signed</div>
+          <div class="si" data-st="alliance"><div class="sdot" style="background:#9b59b6"></div>Alliance</div>
+        </div>
+      </div>
+      <div class="ss"><div class="sl">Search</div><input type="text" id="sbx" placeholder="Name or city..."><div id="srs"></div></div>
+      <div class="ss">
+        <div class="sl">Download Filtered List</div>
+        <button onclick="downloadFilteredAgencies()" style="width:100%;background:var(--ac);border:none;color:#000;padding:7px 0;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          &#11015; Export Filtered Agencies (.csv)
+        </button>
+        <div style="font-size:8px;color:var(--tm);margin-top:5px">Exports all agencies matching current state, size, stage &amp; radius filters with contact info</div>
+      </div>
+      <div class="ss">
+        <div class="sl">Legend</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#444;display:inline-block"></span>Uncontacted</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#3498db;display:inline-block"></span>Discovery</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;display:inline-block"></span>Engaged</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#f1c40f;display:inline-block"></span>Follow-Up</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#e67e22;display:inline-block"></span>MOU Progress</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#5dade2;border:1px solid #2980b9;display:inline-block"></span>MOU Signed</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:8px;height:8px;border-radius:50%;background:#9b59b6;border:1px solid #6c3483;display:inline-block"></span>Alliance</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px;margin-top:2px"><span style="width:14px;height:14px;border-radius:50%;background:#e8a020;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#000">TM</span>Team HQ</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:14px;height:14px;border-radius:50%;background:#5dade2;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#000">M</span>MOU Partner</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:9px"><span style="width:14px;height:14px;border-radius:50%;background:#9b59b6;border:2px solid #fff;display:inline-flex;align-items:center;justify-content:center;font-size:5px;font-weight:700;color:#000">A</span>Alliance</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="mb">
+    <div id="mst">
+      <div class="ms"><span class="msv" id="mV">&#8212;</span><span class="msl">Visible</span></div>
+      <div class="ms"><span class="msv" id="mE">&#8212;</span><span class="msl">Engaged</span></div>
+      <div class="ms"><span class="msv" id="mM2">&#8212;</span><span class="msl">MOUs</span></div>
+      <div class="ms"><span class="msv" id="mA2">&#8212;</span><span class="msl">Alliances</span></div>
+    </div>
+  </div>
+</div>
+<div id="ap">
+  <div id="ah"><h3 id="at2">Activity</h3><button id="ac2" onclick="cA()">&#215;</button></div>
+  <div class="atr">
+    <div class="at active" data-tab="all" onclick="swT(this)">All</div>
+    <div class="at" data-tab="week" onclick="swT(this)">This Week</div>
+    <div class="at" data-tab="last" onclick="swT(this)">Last Week</div>
+  </div>
+  <div id="ab"></div>
+</div>
+
+<!-- MOU VIEW -->
+<div id="v-mou" class="view" style="flex-direction:column">
+  <div id="mou-tb">
+    <div class="mtab active" id="pt-all" onclick="pF('all',this)">All</div>
+    <div class="mtab" id="pt-mou" onclick="pF('mou',this)">MOUs</div>
+    <div class="mtab" id="pt-al" onclick="pF('alliance',this)">Alliances</div>
+    <div class="mt-sep"></div>
+    <span style="font-size:9px;color:var(--tm)">Owner:</span>
+    <select id="owner-f" style="width:110px" onchange="renderPipe()"><option value="">All Reps</option></select>
+    <div class="mt-sep"></div>
+    <input type="text" id="mou-search" placeholder="Search partners...">
+    <div class="nsp"></div>
+    <button id="btn-add" onclick="openMM(null)">+ New MOU / Alliance</button>
+  </div>
+  <div id="mou-body">
+    <div id="pipeline"></div>
+    <div id="sp-sb">
+      <div id="sp-hdr"><h3>Strategic Partners</h3><p>Active signed MOUs &#8212; click to manage</p></div>
+      <div id="sp-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD VIEW -->
+<div id="v-dash" class="view" style="flex-direction:column">
+  <div id="dash-hdr">
+    <h2>&#128200; Activity Dashboard</h2>
+    <div class="wk-nav">
+      <button class="wk-btn" onclick="wkNav(-1)">&#8592;</button>
+      <span id="wk-label">This Week</span>
+      <button class="wk-btn" onclick="wkNav(1)">&#8594;</button>
+    </div>
+    <div class="nsp"></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--tm);cursor:pointer;border:1px solid var(--br);padding:4px 10px;border-radius:6px">
+      <input type="checkbox" id="leader-toggle" style="accent-color:var(--ac)">
+      &#128081; Leadership Mode
+    </label>
+    <button onclick="exportCSV()" style="background:none;border:1px solid var(--br);color:var(--tm);padding:4px 10px;border-radius:5px;cursor:pointer;font-size:10px;margin-left:6px">&#11015; Export CSV</button>
+  </div>
+  <div id="leader-mode-banner" style="display:none;background:rgba(232,160,32,0.1);border-bottom:1px solid rgba(232,160,32,0.2);padding:7px 18px;font-size:10px;color:#e8a020;align-items:center;gap:8px;flex-shrink:0">
+    &#128081; <b>Leadership Mode active</b> &#8212; You can assign tasks, add directions, and reassign contacts to any rep. Metrics are read-only.
+  </div>
+  <div id="dash-body">
+    <div id="rep-list">
+      <div id="rep-list-hdr">Team Reps</div>
+      <div id="rep-items"></div>
+    </div>
+    <div id="dash-center">
+      <div id="metrics-row"></div>
+      <div id="tasks-panel" style="display:none;border-bottom:1px solid var(--br);padding:9px 14px;flex-shrink:0">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--tm);margin-bottom:6px">&#128204; Tasks &amp; Directions</div>
+        <div id="tasks-list"></div>
+      </div>
+      <div id="contacts-area">
+        <div id="contacts-hdr">
+          <span id="contacts-title">Contact Log</span>
+          <button id="btn-add-contact" onclick="openCM(null)">+ Log Contact</button>
+        </div>
+        <div id="contacts-list"></div>
+      </div>
+    </div>
+    <div id="weekly-grid">
+      <div id="wg-hdr">Team This Week</div>
+      <div id="wg-body"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- EXECUTIVE VIEW -->
+<div id="v-exec" class="view" style="flex-direction:column">
+  <div id="exec-wrap">
+    <div class="exec-hdr">
+      <div>
+        <h1>&#127775; APUS First Responder Outreach &#8212; Executive Summary</h1>
+        <p>Strategic Partnerships Division &#8212; live view of team activity, MOU pipeline, and engagement health</p>
+      </div>
+      <div class="exec-datestamp" id="exec-date"></div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- ROW 2: REP SCOREBOARD + PIPELINE FUNNEL + MOU ALERTS -->
+    <div class="exec-3col">
+      <div class="exec-card">
+        <div class="ec-hdr"><h3>&#127942; Rep Activity This Week</h3><span id="wk-lbl-exec"></span></div>
+        <div class="ec-body" id="rep-scoreboard"></div>
+      </div>
+      <div class="exec-card">
+        <div class="ec-hdr"><h3>&#127930; Engagement Pipeline</h3><span>All reps, all time</span></div>
+        <div class="ec-body" id="pipeline-funnel"></div>
+      </div>
+      <div class="exec-card">
+        <div class="ec-hdr"><h3>&#128204; MOU Renewal Alerts</h3><span id="alert-count"></span></div>
+        <div class="ec-body" id="mou-alerts"></div>
+      </div>
+    </div>
+
+    <!-- ROW 3: TREND + MOU BREAKDOWN + STATE HEAT -->
+    <div class="exec-2col">
+      <div class="exec-card">
+        <div class="ec-hdr"><h3>&#128200; Weekly Activity Trend &#8212; All Reps</h3><span>Last 8 weeks</span></div>
+        <div class="ec-body">
+          <div class="trend-chart"><svg class="trend-svg" id="trend-svg" viewBox="0 0 500 120" preserveAspectRatio="none"></svg></div>
+          <div id="trend-legend" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:9px;color:var(--tm)"></div>
+        </div>
+      </div>
+      <div class="exec-card">
+        <div class="ec-hdr"><h3>&#128203; MOUs &amp; Alliances</h3><span>By type and owner</span></div>
+        <div class="ec-body">
+          <div class="donut-wrap" id="donut-wrap"></div>
+          <div style="margin-top:12px" id="mou-by-owner"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 4: CONTACTS BY STATE -->
+    <div class="exec-card">
+      <div class="ec-hdr"><h3>&#127758; Engagement Coverage by State</h3><span>Contacts logged across all reps</span></div>
+      <div class="ec-body">
+        <div class="state-grid" id="state-heat"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:9px;color:var(--tm)">
+          <span>0</span>
+          <div style="flex:1;height:5px;border-radius:3px;background:linear-gradient(to right,rgba(52,152,219,0.1),rgba(52,152,219,1))"></div>
+          <span>High</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MOU MODAL -->
+<div id="mm">
+  <div id="mmi">
+    <div id="mmh"><h2 id="mm-title">New Agreement</h2><button id="mmc" onclick="closeMM()">&#215;</button></div>
+    <div id="mmb">
+      <div id="mm-alert"></div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Lifecycle Stage</div>
+        <div class="lc-bar" id="lc-bar">
+          <div class="lc-s" data-s="prospecting" onclick="setSt('prospecting')">Prospecting</div>
+          <div class="lc-s" data-s="negotiating" onclick="setSt('negotiating')">Negotiating</div>
+          <div class="lc-s on" data-s="signed" onclick="setSt('signed')">Signed</div>
+          <div class="lc-s" data-s="renewal_due" onclick="setSt('renewal_due')">Renewal Due</div>
+          <div class="lc-s" data-s="lapsed" onclick="setSt('lapsed')">Lapsed</div>
+        </div>
+      </div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Partner Details</div>
+        <div class="mm-row">
+          <div class="mm-f" style="flex:2"><label>Organization Name</label><input type="text" id="mm-name" placeholder="e.g. Texas Sheriffs Association"></div>
+          <div class="mm-f"><label>Type</label><select id="mm-type"><option value="mou">MOU</option><option value="alliance">Alliance</option></select></div>
+        </div>
+        <div class="mm-row">
+          <div class="mm-f"><label>Scope</label><select id="mm-scope"><option value="local">Local/County</option><option value="state">Statewide</option><option value="regional">Regional</option><option value="national">National</option></select></div>
+          <div class="mm-f"><label>State/Region</label><input type="text" id="mm-region" placeholder="e.g. TX"></div>
+        </div>
+      </div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Dates &amp; Status</div>
+        <div class="mm-row">
+          <div class="mm-f"><label>Signed Date</label><input type="date" id="mm-signed"></div>
+          <div class="mm-f"><label>Renewal Date</label><input type="date" id="mm-renewal"></div>
+          <div class="mm-f"><label>Status</label><select id="mm-status"><option value="active">Active</option><option value="inactive">Inactive</option><option value="pending">Pending</option></select></div>
+        </div>
+      </div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Ownership</div>
+        <div class="mm-row">
+          <div class="mm-f"><label>Primary Owner</label><select id="mm-owner"><option value="">Unassigned</option></select></div>
+          <div class="mm-f"><label>Support Rep</label><select id="mm-support"><option value="">None</option></select></div>
+        </div>
+      </div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Map Pin</div>
+        <div class="mm-row">
+          <div class="mm-f"><label>Latitude</label><input type="number" id="mm-lat" step="0.00001" placeholder="e.g. 30.267"></div>
+          <div class="mm-f"><label>Longitude</label><input type="number" id="mm-lng" step="0.00001" placeholder="e.g. -97.743"></div>
+        </div>
+      </div>
+      <div class="mm-sec">
+        <div class="mm-lbl">Notes</div>
+        <div class="mm-f"><textarea id="mm-notes" placeholder="Key contacts, meeting history, context..."></textarea></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="mm-save" onclick="saveMOU()">Save Agreement</button>
+        <button id="mm-del" onclick="delMOU()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div id="cm">
+  <div id="cmi">
+    <div id="cmh"><h3 id="cm-title">Log Contact</h3><button id="cmc" onclick="closeCM()">&#215;</button></div>
+    <div id="cmb">
+      <div class="cm-row">
+        <div class="cm-f" style="flex:2"><label>Contact Name *</label><input type="text" id="cm-name" placeholder="First Last"></div>
+        <div class="cm-f"><label>Title / Role</label><input type="text" id="cm-title2" placeholder="Chief, Director..."></div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-f" style="flex:2"><label>Organization *</label><input type="text" id="cm-org" placeholder="Agency / Department"></div>
+        <div class="cm-f"><label>State</label><input type="text" id="cm-state" placeholder="TX"></div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-f"><label>Email</label><input type="email" id="cm-email" placeholder="contact@agency.gov"></div>
+        <div class="cm-f"><label>Phone</label><input type="text" id="cm-phone" placeholder="(555) 000-0000"></div>
+      </div>
+      <div class="cm-row">
+        <div class="cm-f"><label>Engagement Stage *</label>
+          <select id="cm-stage">
+            <option value="discovery">Discovery</option>
+            <option value="engaged">Engaged</option>
+            <option value="followup">Follow-Up</option>
+            <option value="meeting_set">Meeting Set</option>
+            <option value="meeting_done">Meeting Complete</option>
+            <option value="opportunity">Opportunity Created</option>
+            <option value="mou_progress">MOU In Progress</option>
+            <option value="mou_signed">MOU Signed</option>
+            <option value="alliance">Alliance</option>
+            <option value="retarget">Retarget</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="cm-f"><label>Date</label><input type="date" id="cm-date"></div>
+      </div>
+      <div id="cm-tip" style="display:none;background:rgba(232,160,32,0.08);border:1px solid rgba(232,160,32,0.2);border-radius:6px;padding:8px 10px;font-size:10px;color:#e8a020;line-height:1.5;margin-top:2px"></div>
+      <div class="cm-f"><label>Communication Summary</label><textarea id="cm-notes" placeholder="What happened on this touchpoint? Key points from the conversation..."></textarea></div>
+      <div class="cm-f"><label>&#10142; Your Next Step</label><input type="text" id="cm-next" placeholder="e.g. Send MOU draft by Friday, call back next Tuesday..."></div>
+      <button id="cm-save" onclick="saveCM()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<script src="agencies.js"></script>
+<script>
+const D = window.AGENCY_DATA;
+// ===== TEAM =====
+const TM=[
+  {id:"josh",    name:"Josh",        role:"B2G Manager",   cat:"b2g",  color:"#3498db",lat:39.158,lng:-75.524, region:"Dover, DE"},
+  {id:"danica",  name:"Danica",      role:"Cold Outreach", cat:"b2g",  color:"#9b59b6",lat:37.774,lng:-122.419,region:"San Francisco, CA"},
+  {id:"betty",   name:"Betty",       role:"B2G Field",     cat:"field",color:"#e74c3c",lat:33.749,lng:-84.388, region:"Atlanta, GA"},
+  {id:"glaze",   name:"Glaze",       role:"B2G Field",     cat:"field",color:"#e67e22",lat:29.760,lng:-95.370, region:"Houston, TX"},
+  {id:"ricky",   name:"Ricky",       role:"B2B",           cat:"b2b",  color:"#1abc9c",lat:39.350,lng:-79.083, region:"WV/East"},
+  {id:"kathi",   name:"Kathi",       role:"B2B",           cat:"b2b",  color:"#f39c12",lat:41.878,lng:-87.630, region:"Chicago, IL"},
+  {id:"dalena",  name:"Dalena",      role:"Acct Manager",  cat:"acct", color:"#2ecc71",lat:32.777,lng:-96.797, region:"Dallas, TX"},
+  {id:"sierra",  name:"Sierra",      role:"Acct Manager",  cat:"acct", color:"#e91e8c",lat:33.448,lng:-112.074,region:"Phoenix, AZ"},
+  {id:"workman", name:"Workman",     role:"Acct Manager",  cat:"acct", color:"#5dade2",lat:35.227,lng:-80.843, region:"Charlotte, NC"},
+  {id:"kristen", name:"Kristen",     role:"Acct Manager",  cat:"acct", color:"#f1948a",lat:39.961,lng:-82.999, region:"Columbus, OH"},
+  {id:"hoffman", name:"Hoffman",     role:"Acct Manager",  cat:"acct", color:"#82e0aa",lat:39.290,lng:-77.863, region:"Charles Town, WV"},
+  {id:"manning", name:"Mike Manning",role:"Director",      cat:"lead", color:"#aab7b8",lat:40.761,lng:-111.891,region:"Salt Lake City, UT"},
+  {id:"eric",    name:"Eric Morris", role:"VP Strat Parts",cat:"lead", color:"#f0e68c",lat:39.290,lng:-77.800, region:"WV/National"},
+];
+const CATS={b2g:"B2G",field:"Field",b2b:"B2B",acct:"Acct Managers",lead:"Leadership"};
+const APUS_HQ={lat:39.290,lng:-77.863,name:"APUS HQ",addr:"111 W Congress St, Charles Town, WV 25414"};
+
+const SLBL={uncontacted:"Uncontacted",discovery:"Discovery",engaged:"Engaged",followup:"Follow-Up",mou_progress:"MOU Progress",mou_signed:"MOU Signed",alliance:"Alliance"};
+const SC={uncontacted:"#444",discovery:"#3498db",engaged:"#2ecc71",followup:"#f1c40f",mou_progress:"#e67e22",mou_signed:"#5dade2",alliance:"#9b59b6"};
+const STAGES=["prospecting","negotiating","signed","renewal_due","lapsed"];
+const STAGE_L={prospecting:"Prospecting",negotiating:"Negotiating",signed:"Signed",renewal_due:"Renewal Due",lapsed:"Lapsed"};
+const STAGE_C={prospecting:"#5a7a9a",negotiating:"#f39c12",signed:"#2ecc71",renewal_due:"#e67e22",lapsed:"#888"};
+
+const CSTAGE_C={discovery:"#3498db",engaged:"#2ecc71",followup:"#f1c40f",meeting_set:"#e67e22",meeting_done:"#27ae60",opportunity:"#8e44ad",mou_progress:"#e67e22",mou_signed:"#5dade2",alliance:"#9b59b6",cancelled:"#555",retarget:"#e74c3c"};
+const CSTAGE_L={discovery:"Discovery",engaged:"Engaged",followup:"Follow-Up",meeting_set:"Meeting Set",meeting_done:"Meeting Complete",opportunity:"Opportunity Created",mou_progress:"MOU In Progress",mou_signed:"MOU Signed",alliance:"Alliance",cancelled:"Cancelled",retarget:"Retarget"};
+
+// AUTO-TIP ENGINE
+const STAGE_TIPS={
+  discovery:"Introduce APUS & the Everyday Heroes benefit. Share the one-pager. Goal: get a warm reply or referral to decision-maker.",
+  engaged:"They're interested. Send a tailored follow-up within 48 hrs. Propose a 15-min call. Mention tuition reduction + no signature needed for Alliance.",
+  followup:"No response in 5+ days. Try a different channel (call vs email). Reference a relevant milestone (graduation season, budget cycle). Keep it brief.",
+  meeting_set:"Confirm date/time 24 hrs before. Prepare: agency size, current education benefits, who attends. Have MOU template ready.",
+  meeting_done:"Send recap email within 24 hrs. Include next step clearly. If positive: move to Opportunity. If lukewarm: schedule follow-up.",
+  opportunity:"Decision-maker is engaged. Send MOU draft or Alliance confirmation. Loop in leadership if org is 500+ or statewide.",
+  mou_progress:"MOU is in review. Follow up every 7 days. Offer to answer legal/admin questions. Confirm signing authority.",
+  mou_signed:"Celebrate the win! Intro to enrollment team. Schedule kickoff call. Log in the MOU tracker.",
+  alliance:"No signature needed. Confirm Everyday Heroes grant is active. Set quarterly check-in. Track engagement.",
+  retarget:"Gone cold. Wait 30 days, then re-approach with new angle: news hook, peer organization that just signed, updated stats.",
+  cancelled:"Archive for now. Note the reason. Flag for re-engagement in 6 months if leadership changes."
+};
+
+const MET_FIELDS=[
+  {key:"targets",lbl:"Targets Initiated",icon:"🎯"},
+  {key:"comms",lbl:"Comms Sent",icon:"📨"},
+  {key:"mtg_set",lbl:"Meetings Set",icon:"📅"},
+  {key:"mtg_done",lbl:"Meetings Complete",icon:"✅"},
+  {key:"opps",lbl:"Opportunities",icon:"💡"},
+  {key:"mou_q",lbl:"MOUs This Qtr",icon:"📋"},
+  {key:"mou_y",lbl:"MOUs This Year",icon:"📊"},
+  {key:"alliances",lbl:"Alliances",icon:"🤝"},
+];
+
+const SEED=[
+  {name:"Pennsylvania State Police",type:"mou",scope:"state",region:"PA",stage:"signed",status:"active",owner:"josh",support:"",signed:"2022-06-01",renewal:"2025-06-01",lat:40.264,lng:-76.884,notes:""},
+  {name:"Maryland Dept. of Pub. Safety & Correctional Svcs",type:"mou",scope:"state",region:"MD",stage:"signed",status:"active",owner:"josh",support:"hoffman",signed:"2022-09-15",renewal:"2025-09-15",lat:39.045,lng:-76.641,notes:""},
+  {name:"Maryland Fire Chiefs Association",type:"mou",scope:"state",region:"MD",stage:"signed",status:"active",owner:"josh",support:"hoffman",signed:"2023-03-01",renewal:"2026-03-01",lat:38.980,lng:-76.600,notes:""},
+  {name:"Maryland State Police",type:"mou",scope:"state",region:"MD",stage:"signed",status:"active",owner:"josh",support:"",signed:"2022-11-01",renewal:"2025-11-01",lat:39.040,lng:-76.650,notes:""},
+  {name:"Mid-Atlantic Regional Gang Investigators Network (MARGIN)",type:"mou",scope:"regional",region:"Mid-Atlantic",stage:"signed",status:"active",owner:"josh",support:"",signed:"2023-01-10",renewal:"2026-01-10",lat:38.900,lng:-77.050,notes:""},
+  {name:"WI Chiefs",type:"mou",scope:"state",region:"WI",stage:"signed",status:"active",owner:"kathi",support:"",signed:"2022-08-01",renewal:"2025-08-01",lat:44.268,lng:-89.616,notes:""},
+  {name:"Texas Sheriffs Association",type:"mou",scope:"state",region:"TX",stage:"signed",status:"active",owner:"dalena",support:"glaze",signed:"2023-05-15",renewal:"2026-05-15",lat:30.267,lng:-97.743,notes:"Dalena primary. Glaze supports field."},
+  {name:"Harris County Sheriff",type:"mou",scope:"local",region:"TX",stage:"signed",status:"active",owner:"glaze",support:"dalena",signed:"2023-02-20",renewal:"2026-02-20",lat:29.760,lng:-95.370,notes:""},
+  {name:"California Police Chiefs Association (CPCA)",type:"mou",scope:"state",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2022-12-01",renewal:"2025-12-01",lat:38.576,lng:-121.479,notes:"Statewide CA reach."},
+  {name:"LASD University",type:"mou",scope:"local",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2023-04-01",renewal:"2026-04-01",lat:34.052,lng:-118.244,notes:""},
+  {name:"LA Airport Police Dept University (LAXPDU)",type:"mou",scope:"local",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2023-04-01",renewal:"2026-04-01",lat:33.942,lng:-118.408,notes:""},
+  {name:"Los Angeles County Sheriff's Department",type:"mou",scope:"local",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2022-10-15",renewal:"2025-10-15",lat:34.052,lng:-118.250,notes:""},
+  {name:"Los Angeles Police Department",type:"mou",scope:"local",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2022-10-15",renewal:"2025-10-15",lat:34.054,lng:-118.243,notes:""},
+  {name:"San Diego Fireman's Relief Association (SDFRA)",type:"mou",scope:"local",region:"CA",stage:"signed",status:"active",owner:"sierra",support:"",signed:"2023-07-01",renewal:"2026-07-01",lat:32.715,lng:-117.157,notes:""},
+  {name:"Charlotte County Florida Sheriff",type:"mou",scope:"local",region:"FL",stage:"signed",status:"active",owner:"betty",support:"",signed:"2023-03-15",renewal:"2026-03-15",lat:26.990,lng:-82.078,notes:""},
+  {name:"Cobb County GA Fire and Police",type:"mou",scope:"local",region:"GA",stage:"signed",status:"active",owner:"betty",support:"",signed:"2023-01-01",renewal:"2026-01-01",lat:33.940,lng:-84.520,notes:""},
+  {name:"Cook County Sheriff's Office (IL)",type:"mou",scope:"local",region:"IL",stage:"signed",status:"active",owner:"kathi",support:"",signed:"2022-07-01",renewal:"2025-07-01",lat:41.742,lng:-87.709,notes:""},
+  {name:"Diplomatic Security Special Agents Assoc. (DSSAA)",type:"mou",scope:"national",region:"National",stage:"signed",status:"active",owner:"josh",support:"danica",signed:"2023-06-01",renewal:"2026-06-01",lat:38.896,lng:-77.040,notes:""},
+  {name:"FBI National Academy Associates (FBI NAA)",type:"mou",scope:"national",region:"National",stage:"signed",status:"active",owner:"josh",support:"",signed:"2022-05-01",renewal:"2025-05-01",lat:38.895,lng:-77.037,notes:""},
+  {name:"Fraternal Order of Police (FOP)",type:"mou",scope:"national",region:"National",stage:"renewal_due",status:"active",owner:"josh",support:"manning",signed:"2021-09-01",renewal:"2024-09-01",lat:38.897,lng:-77.035,notes:"RENEWAL OVERDUE — coordinate with Manning."},
+  {name:"Illinois Assoc. of Chiefs of Police",type:"mou",scope:"state",region:"IL",stage:"signed",status:"active",owner:"kathi",support:"",signed:"2022-11-15",renewal:"2025-11-15",lat:39.798,lng:-89.654,notes:""},
+  {name:"Illinois State Police",type:"mou",scope:"state",region:"IL",stage:"signed",status:"active",owner:"kathi",support:"",signed:"2022-08-15",renewal:"2025-08-15",lat:39.798,lng:-89.660,notes:""},
+  {name:"Illinois Tactical Officers' Association (ITOA)",type:"mou",scope:"state",region:"IL",stage:"signed",status:"active",owner:"kathi",support:"",signed:"2023-02-01",renewal:"2026-02-01",lat:39.800,lng:-89.650,notes:""},
+  {name:"International Assoc. of Fire Fighters (IAFF)",type:"mou",scope:"national",region:"National",stage:"renewal_due",status:"active",owner:"josh",support:"manning",signed:"2021-11-01",renewal:"2024-11-01",lat:38.900,lng:-77.030,notes:"RENEWAL OVERDUE — top priority."},
+  {name:"Lee County Florida Sheriff",type:"mou",scope:"local",region:"FL",stage:"signed",status:"active",owner:"betty",support:"",signed:"2023-04-01",renewal:"2026-04-01",lat:26.562,lng:-81.949,notes:""},
+  {name:"Public Safety Training and Development",type:"mou",scope:"regional",region:"National",stage:"signed",status:"active",owner:"manning",support:"",signed:"2022-04-01",renewal:"2025-04-01",lat:38.895,lng:-77.037,notes:""},
+  {name:"Southern States Correctional Assoc. (SSCA)",type:"mou",scope:"regional",region:"Southeast",stage:"signed",status:"active",owner:"betty",support:"danica",signed:"2023-08-01",renewal:"2026-08-01",lat:32.361,lng:-86.279,notes:""},
+];
+
+let AG=D.map((r,i)=>({id:i,name:r[0],address:r[1],city:r[2],state:r[3],zip:r[4],lat:r[5],lng:r[6],status:"uncontacted",assignee:null,type:"mou",notes:"",phone:"",email:"",website:"",size:eS(r[0])}));
+
+function eS(n){
+  // Size tiers: large=2000+, medium=500-2000, small=<500
+  // Based on FBI UCR / BJS data: only ~18 agencies nationally exceed 2000 sworn officers
+  // ~76% of all US agencies have <25 officers; county sheriffs avg 50-300 depending on county pop
+  n=n.toLowerCase();
+
+  // ── LARGE (2,000+ sworn) ──────────────────────────────────────────────────
+  // Named mega-departments known from FBI UCR data
+  const megaDepts=["new york city police","nypd","chicago police department","los angeles police department","lapd","houston police department","philadelphia police department","las vegas metropolitan","metropolitan police department","miami-dade police","dallas police department","phoenix police department","nassau county police","detroit police department","san antonio police","suffolk county police","boston police department","baltimore police department","los angeles county sheriff","lasd","new york state police","california highway patrol","texas department of public safety","florida highway patrol","illinois state police","pennsylvania state police","new jersey state police","michigan state police","georgia state patrol","ohio state highway patrol"];
+  if(megaDepts.some(d=>n.includes(d)))return"large";
+  // State-level agencies are almost always large
+  if((n.includes("state police")||n.includes("state patrol")||n.includes("state troopers")||n.includes("highway patrol"))&&!n.includes("retired")&&!n.includes("assoc"))return"large";
+  // Statewide corrections departments
+  if(n.includes("department of correction")||n.includes("dept of correction")||n.includes("state correctional"))return"large";
+  // Major transit/port authorities with large forces
+  if((n.includes("transit police")||n.includes("transit authority police")||n.includes("port authority")&&n.includes("police")))return"large";
+  // National associations (represent 2000+ members)
+  if(n.includes("fraternal order of police")||n.includes("international assoc")||n.includes("national assoc")||n.includes("national federation")||n.includes("fop")||n.includes("iaff")||n.includes("police chiefs assoc"))return"large";
+
+  // ── MEDIUM (500–2,000 sworn) ─────────────────────────────────────────────
+  // Large county sheriffs (major metro counties typically 500-2000+)
+  // LA, Cook, Harris, Maricopa, Miami-Dade caught above; next tier:
+  const largeSheriffCounties=["broward","palm beach","riverside","san bernardino","orange county","sacramento","alameda","contra costa","san diego","santa clara","king county","pierce","multnomah","hennepin","ramsey","wayne county","macomb","oakland county","cuyahoga","franklin county","hamilton county","dekalb","gwinnett","shelby county","harris county","tarrant","bexar","travis","clark county","pinellas","hillsborough","duval","pima","wake","mecklenburg","jefferson county","st louis county","baltimore county","fairfax","montgomery county","prince george"];
+  if(n.includes("sheriff")&&largeSheriffCounties.some(c=>n.includes(c)))return"medium";
+  // City PDs in cities 250k-1M population are typically 500-2000
+  const medCities=["seattle","denver","portland","las vegas","memphis","louisville","baltimore","milwaukee","albuquerque","tucson","fresno","sacramento","kansas city","mesa","omaha","colorado springs","raleigh","long beach","virginia beach","atlanta","minneapolis","new orleans","cleveland","tampa","aurora","anaheim","corpus christi","riverside","santa ana","lexington","st. paul","pittsburgh","anchorage","stockton","cincinnati","st. louis","toledo","greensboro","newark","buffalo","plano","lincoln","henderson","fort wayne","jersey city","chandler","laredo","norfolk","madison","durham","lubbock","winston-salem","garland","glendale","hialeah","reno","baton rouge","irvine","chesapeake","scottsdale","north las vegas","fremont","gilbert","san bernardino","boise","birmingham","richmond","spokane","des moines","modesto","fayetteville","tacoma","oxnard","fontana","moreno valley","glendale","huntington beach","salt lake city","grand rapids","amarillo","yonkers","akron","little rock","huntsville","worcester","knoxville","augusta","providence","tempe","chattanooga","fort lauderdale","shreveport","mobile","oceanside","elk grove","clarksville","ontario","garden grove","peoria","springfield","cape coral","tallahassee","vancouver","sioux falls","savannah","roseville","jackson","torrance","full erton"];
+  if(medCities.some(c=>n.includes(c)))return"medium";
+  // Fire departments in major cities are medium
+  if((n.includes("fire department")||n.includes("fire dept"))&&(n.includes("county")||medCities.some(c=>n.includes(c))))return"medium";
+  // Airport police at major airports typically 200-800 officers
+  if(n.includes("airport")&&(n.includes("police")||n.includes("authority")))return"medium";
+  // Regional/statewide associations are medium-large but not mega
+  if(n.includes("chiefs association")||n.includes("sheriffs association")||n.includes("chiefs assoc")||n.includes("peace officers assoc"))return"medium";
+  // Large correctional facilities / county jails
+  if(n.includes("correctional")&&(n.includes("county")||n.includes("regional")))return"medium";
+  // University police at large universities (flagship state schools)
+  if(n.includes("university")&&(n.includes("state")||n.includes("michigan")||n.includes("ohio")||n.includes("penn")||n.includes("florida")||n.includes("texas")||n.includes("california")||n.includes("ucla")||n.includes("usc")))return"medium";
+
+  // ── SMALL (<500 sworn) ────────────────────────────────────────────────────
+  // Village, township, borough — virtually always tiny
+  if(n.includes("village")||n.includes("township")||n.includes("borough")||n.includes("town of"))return"small";
+  // Small town PDs
+  if(n.includes("town police")||n.includes("city of")&&!medCities.some(c=>n.includes(c)))return"small";
+  // Rural county sheriffs not in large-county list
+  if(n.includes("county sheriff")||n.includes("sheriff's office")||n.includes("sheriff office"))return"small";
+  // College/university campus police at smaller schools
+  if(n.includes("university")||n.includes("college"))return"small";
+  // Fire districts, rural fire depts
+  if(n.includes("fire district")||n.includes("fire protection")||n.includes("volunteer fire"))return"small";
+  // Default: most agencies in the US are small
+  return"small";
+}
+
+let MOUS=[],CONTACTS={},METRICS={},TASKS={},aLog=[];
+let leaderMode=false;
+
+function svAll(){
+  const ao={};AG.forEach(a=>{if(a.status!=="uncontacted"||a.assignee||a.notes||a.phone||a.email)ao[a.id]={status:a.status,assignee:a.assignee,type:a.type,notes:a.notes,phone:a.phone,email:a.email};});
+  try{
+    localStorage.setItem("apus_v1",JSON.stringify(ao));
+    localStorage.setItem("apus_mous",JSON.stringify(MOUS));
+    localStorage.setItem("apus_act",JSON.stringify(aLog));
+    localStorage.setItem("apus_contacts",JSON.stringify(CONTACTS));
+    localStorage.setItem("apus_metrics",JSON.stringify(METRICS));
+    localStorage.setItem("apus_tasks",JSON.stringify(TASKS));
+  }catch(e){}
+}
+function ldAll(){
+  try{const d=JSON.parse(localStorage.getItem("apus_v1")||"{}");Object.entries(d).forEach(([i,v])=>{const a=AG[+i];if(a)Object.assign(a,v);});}catch(e){}
+  try{const m=JSON.parse(localStorage.getItem("apus_mous"));MOUS=m&&m.length?m:SEED.map((s,i)=>({...s,id:"m"+i}));}catch(e){MOUS=SEED.map((s,i)=>({...s,id:"m"+i}));}
+  try{aLog=JSON.parse(localStorage.getItem("apus_act")||"[]");}catch(e){}
+  try{CONTACTS=JSON.parse(localStorage.getItem("apus_contacts")||"{}");}catch(e){}
+  try{METRICS=JSON.parse(localStorage.getItem("apus_metrics")||"{}");}catch(e){}
+  try{TASKS=JSON.parse(localStorage.getItem("apus_tasks")||"{}");}catch(e){}
+}
+function lgA(mid,txt){aLog.unshift({mid,txt,dt:new Date().toISOString()});aLog=aLog.slice(0,500);}
+
+// ===== MAP =====
+let map3,isN=true,rC=null,mL=null,mouL=null,cRM=null,cR2=0,sfSt="all",sfSz="all",sfState="";
+function iMap(){
+  map3=L.map("mb",{center:[37.8,-96],zoom:4,zoomControl:true});
+  map3.zoomControl.setPosition("bottomright");
+  sTile(true);mL=L.layerGroup().addTo(map3);mouL=L.layerGroup().addTo(map3);
+  rMk();rMouPins();
+}
+let cTL=null;
+function sTile(n){
+  if(cTL)map3.removeLayer(cTL);
+  cTL=L.tileLayer(n?"https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png":"https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{attribution:"&copy;OSM &copy;CARTO",subdomains:"abcd",maxZoom:19}).addTo(map3);
+}
+function mkI(c,b,sz){
+  const s2=sz||10,h=s2/2,sw=sz>14?2.5:1.5;
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+s2+'" height="'+s2+'" viewBox="0 0 '+s2+' '+s2+'"><circle cx="'+h+'" cy="'+h+'" r="'+(h-0.8)+'" fill="'+c+'" stroke="'+(b||c)+'" stroke-width="'+sw+'"/></svg>';
+  return L.divIcon({html:svg,className:"",iconSize:[s2,s2],iconAnchor:[h,h],popupAnchor:[0,-(h+3)]});
+}
+function sopts(cur){return Object.entries(SLBL).map(([k,v])=>'<option value="'+k+'"'+(cur===k?" selected":"")+'>'+v+'</option>').join("");}
+function topts3(cur){return TM.map(t=>'<option value="'+t.id+'"'+(cur===t.id?" selected":"")+'>'+t.name+'</option>').join("");}
+function rMk(){
+  // Use chunked rendering to avoid freezing on filter changes
+  renderMarkersChunked(null);
+}
+function oP(a){
+  const ph='<input type="text" id="ph'+a.id+'" value="'+a.phone+'" placeholder="Phone..." style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:#f0f4f8;padding:2px 5px;font-size:9px">';
+  const em='<input type="text" id="em'+a.id+'" value="'+a.email+'" placeholder="Email..." style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:#f0f4f8;padding:2px 5px;font-size:9px">';
+  const wb='<input type="text" id="wb'+a.id+'" value="'+a.website+'" placeholder="Website URL..." style="flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:3px;color:#f0f4f8;padding:2px 5px;font-size:9px">';
+  const nt='<textarea id="nt'+a.id+'" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);border-radius:4px;color:#f0f4f8;padding:4px 6px;font-size:9px;resize:vertical;min-height:36px">'+a.notes+'</textarea>';
+  const tb=a.type==="alliance"?'<span class="pbg ba">Alliance</span>':'<span class="pbg bm">MOU Track</span>';
+  const wbLink=a.website?'<a href="'+a.website+'" target="_blank" style="color:#5dade2;font-size:9px">'+a.website+'</a>':'';
+  L.popup({maxWidth:275,closeButton:true}).setLatLng([a.lat,a.lng]).setContent('<div class="pi"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:5px;margin-bottom:2px"><div class="pn">'+a.name+'</div>'+tb+'</div><div class="pa">'+a.address+', '+a.city+', '+a.state+'</div><div class="pc"><div class="pr2">&#128222; '+ph+'</div><div class="pr2">&#9993; '+em+'</div><div class="pr2">&#127758; '+wb+'</div>'+(a.website?'<div style="font-size:9px;margin-top:2px">&#128279; '+wbLink+'</div>':'')+'</div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Stage:</span><select class="psel" id="ss'+a.id+'">'+sopts(a.status)+'</select></div><div class="psr"><span style="font-size:9px;color:#8aa3bf">Type:</span><select class="psel" id="ts'+a.id+'"><option value="mou"'+(a.type==="mou"?" selected":"")+'>MOU</option><option value="alliance"'+(a.type==="alliance"?" selected":"")+'>Alliance</option></select><span style="font-size:9px;color:#8aa3bf">Assigned:</span><select class="psel" id="as'+a.id+'"><option value="">None</option>'+topts3(a.assignee)+'</select></div>'+nt+'<button class="psv" onclick="sAg('+a.id+')">Save</button></div>').openOn(map3);
+}
+function sAg(id){
+  const a=AG[id],prev=a.status;
+  a.status=document.getElementById("ss"+id).value;a.type=document.getElementById("ts"+id).value;
+  a.assignee=document.getElementById("as"+id).value||null;a.notes=document.getElementById("nt"+id).value;
+  a.phone=document.getElementById("ph"+id).value;a.email=document.getElementById("em"+id).value;
+  const wbEl=document.getElementById("wb"+id);if(wbEl)a.website=wbEl.value;
+  if(a.status!==prev)lgA(a.assignee||"unassigned","Updated <b>"+a.name+"</b> \u2192 "+SLBL[a.status]);
+  svAll();map3.closePopup();rMk();
+}
+function rMouPins(){
+  mouL.clearLayers();
+  MOUS.forEach(m=>{
+    if(!m.lat||!m.lng)return;
+    const c=m.type==="alliance"?"#9b59b6":"#5dade2";
+    const sz=(m.scope==="national"||m.scope==="state")?20:16;
+    const mk=L.marker([m.lat,m.lng],{icon:mkI(c,"#fff",sz),zIndexOffset:500});
+    const ren=renStatus(m);
+    mk.bindTooltip('<b>'+m.name+'</b><br>'+m.type.toUpperCase()+' \u2022 '+STAGE_L[m.stage]+(ren.label?' \u2022 <span style="color:'+ren.color+'">'+ren.label+'</span>':''),{direction:"top"});
+    mk.on("click",()=>openMM(m));mouL.addLayer(mk);
+  });
+  const hqSvg='<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="#e8a020" stroke="#fff" stroke-width="2.5"/><text x="11" y="15" text-anchor="middle" font-size="8" font-weight="bold" fill="#000">HQ</text></svg>';
+  L.marker([APUS_HQ.lat,APUS_HQ.lng],{icon:L.divIcon({html:hqSvg,className:"",iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-13]}),zIndexOffset:2000}).bindTooltip('<b>APUS HQ</b><br>'+APUS_HQ.addr,{direction:"top"}).addTo(map3);
+}
+function uSt(vis){
+  const eng=AG.filter(a=>a.status!=="uncontacted").length;
+  // MOU count = only from the Strategic Partners MOUS array (not agency pins)
+  const mou=MOUS.filter(m=>m.stage==="signed"&&m.status==="active"&&m.type==="mou").length;
+  const al=MOUS.filter(m=>m.type==="alliance").length;
+  document.getElementById("sT").textContent=AG.length.toLocaleString();
+  document.getElementById("sV").textContent=vis.toLocaleString();
+  document.getElementById("sM").textContent=mou.toLocaleString();
+  document.getElementById("sA").textContent=al.toLocaleString();
+  document.getElementById("mV").textContent=vis.toLocaleString();
+  document.getElementById("mE").textContent=eng.toLocaleString();
+  document.getElementById("mM2").textContent=mou.toLocaleString();
+  document.getElementById("mA2").textContent=al.toLocaleString();
+}
+
+// TEAM BUILDER
+function bTeam(){
+  const tl=document.getElementById("tl");
+  const of=document.getElementById("owner-f");
+  const mo=document.getElementById("mm-owner"),ms2=document.getElementById("mm-support");
+  Object.entries(CATS).forEach(([cat,label])=>{
+    const members=TM.filter(t=>t.cat===cat);if(!members.length)return;
+    const grp=document.createElement("div");
+    const hdr=document.createElement("div");hdr.className="tgroup-hdr";
+    const arr=document.createElement("span");arr.className="tgroup-arrow";arr.textContent="\u25B6";
+    hdr.innerHTML='<span class="tgroup-label">'+label+'</span>';hdr.appendChild(arr);
+    const items=document.createElement("div");items.className="tgroup-items collapsed";
+    hdr.addEventListener("click",()=>{const isNowCollapsed=items.classList.toggle("collapsed");arr.classList.toggle("open",!isNowCollapsed);});
+    members.forEach(t=>{
+      const cnt=AG.filter(a=>a.assignee===t.id).length;
+      const b=document.createElement("div");b.className="mb2";b.dataset.id=t.id;
+      b.innerHTML='<div class="md" style="background:'+t.color+'"></div><div style="flex:1"><div class="mn">'+t.name+'</div><div class="mr2">'+t.role+'</div></div>'+(cnt?'<div class="mc">'+cnt+'</div>':"");
+      b.addEventListener("click",()=>shA(t));items.appendChild(b);
+      [document.getElementById("rm"),of,mo,ms2].forEach(sel=>{if(!sel)return;const o=document.createElement("option");o.value=t.id;o.textContent=t.name;sel.appendChild(o);});
+      const ri=document.getElementById("rep-items");
+      const ri2=document.createElement("div");ri2.className="rep-item";ri2.dataset.id=t.id;
+      const taskCnt=getTasksForRep(t.id).filter(tk=>!tk.done).length;
+      ri2.innerHTML='<div class="rep-dot" style="background:'+t.color+'"></div><div style="flex:1"><div class="rep-name">'+t.name+'</div><div class="rep-role">'+t.role+' \u2022 '+t.region+'</div></div>'+(taskCnt>0?'<span style="font-size:9px;background:rgba(231,76,60,.2);color:#e74c3c;padding:1px 5px;border-radius:6px;border:1px solid rgba(231,76,60,.3)">'+taskCnt+' task'+(taskCnt>1?"s":"")+'</span>':"");
+      ri2.addEventListener("click",()=>selRep(t.id));ri.appendChild(ri2);
+    });
+    grp.appendChild(hdr);grp.appendChild(items);tl.appendChild(grp);
+  });
+}
+function aTMk(){
+  TM.forEach(t=>{
+    const sv='<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7.5" fill="'+t.color+'" stroke="#fff" stroke-width="2"/><text x="9" y="13" text-anchor="middle" font-size="5.5" font-weight="bold" fill="#fff">'+t.name.substring(0,2).toUpperCase()+'</text></svg>';
+    L.marker([t.lat,t.lng],{icon:L.divIcon({html:sv,className:"",iconSize:[18,18],iconAnchor:[9,9],popupAnchor:[0,-10]}),zIndexOffset:1000}).bindTooltip('<b>'+t.name+'</b><br>'+t.role+' \u2022 '+t.region,{direction:"top"}).addTo(map3);
+  });
+}
+
+// ACTIVITY PANEL
+let aM2=null,aTab2="all";
+function shA(m){
+  aM2=m;document.getElementById("ap").style.display="block";document.getElementById("at2").textContent="Activity: "+m.name;
+  document.querySelectorAll(".mb2").forEach(b=>b.classList.toggle("active",b.dataset.id===m.id));
+  const now=Date.now(),demo=[
+    {mid:m.id,txt:"Initiated contact with <b>Metro Fire District</b>",dt:new Date(now-86400000).toISOString()},
+    {mid:m.id,txt:"Updated <b>State Troopers HQ</b> \u2192 Discovery",dt:new Date(now-172800000).toISOString()},
+    {mid:m.id,txt:"Meeting set: <b>County Sheriff Dept</b>",dt:new Date(now-259200000).toISOString()},
+    {mid:m.id,txt:"MOU signed: <b>Fire Dept of "+m.region+"</b>",dt:new Date(now-777600000).toISOString()},
+  ];
+  rAct([...aLog.filter(a=>a.mid===m.id),...demo]);
+}
+function rAct(items){
+  const now=Date.now(),wk=604800000,tw=1209600000;
+  let f=aTab2==="week"?items.filter(a=>now-new Date(a.dt).getTime()<wk):aTab2==="last"?items.filter(a=>{const d=now-new Date(a.dt).getTime();return d>=wk&&d<tw;}):items;
+  const b=document.getElementById("ab");
+  if(!f.length){b.innerHTML='<div style="font-size:10px;color:var(--tm);padding:8px 0">No activity logged.</div>';return;}
+  let h="",prev="";
+  f.forEach(item=>{
+    const d=new Date(item.dt),age=now-d.getTime();
+    const lbl=age<wk?"This week":age<tw?"Last week":d.toLocaleDateString("en-US",{month:"short",year:"numeric"});
+    if(lbl!==prev){h+='<div class="awk" style="margin-top:'+(prev?"8px":"0")+'">'+lbl+'</div>';prev=lbl;}
+    const mem=TM.find(t=>t.id===item.mid),dc=mem?mem.color:"#888";
+    h+='<div class="ai"><div class="aid" style="background:'+dc+'"></div><div class="ait">'+item.txt+'<span style="font-size:8px;opacity:.4;display:block">'+d.toLocaleDateString()+'</span></div></div>';
+  });
+  b.innerHTML=h;
+}
+function swT(el){document.querySelectorAll(".at").forEach(t=>t.classList.remove("active"));el.classList.add("active");aTab2=el.dataset.tab;if(aM2)shA(aM2);}
+function cA(){document.getElementById("ap").style.display="none";document.querySelectorAll(".mb2").forEach(b=>b.classList.remove("active"));aM2=null;}
+function sR(mi){document.getElementById("rs").value=mi;cR2=mi;document.getElementById("rv").textContent=mi?mi+" mi":"Off";uRC2();rMk();}
+document.getElementById("rs").addEventListener("input",function(){cR2=+this.value;document.getElementById("rv").textContent=cR2?cR2+" mi":"Off";uRC2();rMk();});
+document.getElementById("rm").addEventListener("change",function(){cRM=this.value;if(cRM){const m=TM.find(t=>t.id===cRM);if(m)map3.setView([m.lat,m.lng],7);}uRC2();rMk();});
+function uRC2(){if(rC){map3.removeLayer(rC);rC=null;}if(!cRM||cR2<=0)return;const m=TM.find(t=>t.id===cRM);if(!m)return;rC=L.circle([m.lat,m.lng],{radius:cR2*1609.34,color:m.color,weight:2,dashArray:"6 4",fillColor:m.color,fillOpacity:0.06}).addTo(map3);}
+["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","GU","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","PR","RI","SC","SD","TN","TX","UT","VA","VI","VT","WA","WI","WV","WY"].forEach(s=>{const o=document.createElement("option");o.value=s;o.textContent=s;document.getElementById("stS").appendChild(o);});
+document.getElementById("stS").addEventListener("change",function(){sfState=this.value;rMk();});
+document.querySelectorAll("#szC .chip").forEach(c=>c.addEventListener("click",function(){document.querySelectorAll("#szC .chip").forEach(x=>x.classList.remove("active"));this.classList.add("active");sfSz=this.dataset.sz;rMk();}));
+document.querySelectorAll("#stF .si").forEach(s=>s.addEventListener("click",function(){document.querySelectorAll("#stF .si").forEach(x=>x.classList.remove("active"));this.classList.add("active");sfSt=this.dataset.st;rMk();}));
+const sx=document.getElementById("sbx"),sr3=document.getElementById("srs");
+sx.addEventListener("input",function(){const q=this.value.trim().toLowerCase();sr3.innerHTML="";if(q.length<3)return;AG.filter(a=>a.name.toLowerCase().includes(q)||a.city.toLowerCase().includes(q)).slice(0,8).forEach(a=>{const d=document.createElement("div");d.className="sri";d.textContent=a.name+" \u2014 "+a.city+", "+a.state;d.addEventListener("click",()=>{map3.setView([a.lat,a.lng],13);oP(a);sr3.innerHTML="";sx.value="";});sr3.appendChild(d);});});
+document.getElementById("btnN").addEventListener("click",function(){isN=!isN;sTile(isN);this.textContent=isN?"\u2600 Day":"\uD83C\uDF19 Night";});
+
+// VIEW SWITCH
+function sv(v){
+  ["map","mou","dash","exec"].forEach(n=>{
+    document.getElementById("v-"+n).classList.toggle("active",n===v);
+    document.getElementById("nt-"+n).classList.toggle("active",n===v);
+  });
+  document.getElementById("ap").style.display="none";
+  if(v==="mou"){renderPipe();renderSP();}
+  if(v==="dash"){renderDash();}
+  if(v==="exec"){renderExec();}
+  if(v==="map"&&map3){setTimeout(()=>map3.invalidateSize(),50);}
+}
+
+// MOU
+function renStatus(m){
+  if(!m.renewal)return{level:0,label:"",color:"#2ecc71",cls:""};
+  const days=Math.round((new Date(m.renewal)-new Date())/86400000);
+  if(days<0)return{level:4,label:"LAPSED",color:"#888",cls:"rblap"};
+  if(days<=30)return{level:3,label:days+"d",color:"#e74c3c",cls:"rb30"};
+  if(days<=60)return{level:2,label:days+"d",color:"#e67e22",cls:"rb60"};
+  if(days<=90)return{level:1,label:days+"d",color:"#f1c40f",cls:"rb90"};
+  return{level:0,label:"",color:"#2ecc71",cls:""};
+}
+let pF2="all",editMOU=null;
+function pF(f,el){pF2=f;document.querySelectorAll(".mtab").forEach(t=>t.classList.remove("active"));el.classList.add("active");renderPipe();}
+function renderPipe(){
+  const owF=document.getElementById("owner-f").value,srF=document.getElementById("mou-search").value.toLowerCase();
+  const pipe=document.getElementById("pipeline");pipe.innerHTML="";
+  STAGES.forEach(stage=>{
+    const cards=MOUS.filter(m=>{
+      if(pF2==="mou"&&m.type!=="mou")return false;if(pF2==="alliance"&&m.type!=="alliance")return false;
+      if(owF&&m.owner!==owF&&m.support!==owF)return false;if(srF&&!m.name.toLowerCase().includes(srF))return false;
+      return m.stage===stage;
+    });
+    const col=document.createElement("div");col.className="pipe-col";
+    const sc=STAGE_C[stage];
+    col.innerHTML='<div class="ph" style="background:'+sc+'1a;border:1px solid '+sc+'33"><div class="ph-dot" style="background:'+sc+'"></div><div class="ph-lbl">'+STAGE_L[stage]+'</div><div class="ph-cnt">'+cards.length+'</div></div>';
+    const cd=document.createElement("div");cd.className="pcards";
+    cards.forEach(m=>{
+      const ren=renStatus(m),owner=TM.find(t=>t.id===m.owner),sup=TM.find(t=>t.id===m.support);
+      const card=document.createElement("div");
+      card.className="mou-card"+(ren.level===1?" r90":ren.level===2?" r60":ren.level===3?" r30":ren.level===4?" rlapsed":"");
+      const scopeB=m.scope==="national"?'<span style="font-size:7px;background:rgba(232,160,32,.15);color:#e8a020;border:1px solid rgba(232,160,32,.25);padding:1px 4px;border-radius:3px;font-weight:700">NATL</span>':m.scope==="state"?'<span style="font-size:7px;background:rgba(52,152,219,.12);color:#5dade2;border:1px solid rgba(52,152,219,.2);padding:1px 4px;border-radius:3px;font-weight:700">STATE</span>':"";
+      card.innerHTML=(ren.level>0?'<div class="rbadge '+ren.cls+'">'+(ren.level===4?"LAPSED":ren.label+" left")+'</div>':'')+'<div class="mc-name">'+m.name+'</div><div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><span class="mc-type '+m.type+'">'+m.type.toUpperCase()+'</span>'+scopeB+'</div><div class="mc-meta">'+(m.renewal?'<span>\u{1F4C5} '+new Date(m.renewal).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})+'</span>':'')+'<span>\u{1F30D} '+m.region+'</span></div><div class="mc-owner">'+(owner?'<div class="mc-dot" style="background:'+owner.color+'"></div><span class="mc-own-name">'+owner.name+(sup?" & "+sup.name:"")+'</span>':'<span class="mc-own-name" style="color:#444">Unassigned</span>')+'</div>';
+      // drag source
+      card.setAttribute("draggable","true");
+      card.dataset.mouId = m.id;
+      card.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("mouId", m.id);
+        card.classList.add("dragging");
+        setTimeout(()=>card.classList.add("dragging"),0);
+      });
+      card.addEventListener("dragend", () => card.classList.remove("dragging"));
+      card.addEventListener("click",()=>openMM(m));
+      cd.appendChild(card);
+    });
+    // drop target
+    cd.addEventListener("dragover", e => {
+      e.preventDefault();
+      cd.classList.add("drag-over");
+      col.classList.add("drop-ready");
+    });
+    cd.addEventListener("dragleave", () => {
+      cd.classList.remove("drag-over");
+      col.classList.remove("drop-ready");
+    });
+    cd.addEventListener("drop", e => {
+      e.preventDefault();
+      cd.classList.remove("drag-over");
+      col.classList.remove("drop-ready");
+      const mouId = e.dataTransfer.getData("mouId");
+      const mou = MOUS.find(m => m.id === mouId);
+      if(mou && mou.stage !== stage) {
+        mou.stage = stage;
+        lgA(mou.owner||"unassigned", "Moved <b>"+mou.name+"</b> → "+STAGE_L[stage]);
+        svAll();
+        renderPipe();
+        rMouPins();
+      }
+    });
+    col.appendChild(cd);pipe.appendChild(col);
+  });
+  renderSP();
+}
+function renderSP(){
+  const list=document.getElementById("sp-list");list.innerHTML="";
+  MOUS.filter(m=>m.stage==="signed"&&m.status==="active").sort((a,b)=>a.name.localeCompare(b.name)).forEach(m=>{
+    const ren=renStatus(m),owner=TM.find(t=>t.id===m.owner);
+    const item=document.createElement("div");item.className="sp-item";
+    const stcls=ren.level>=3?"sp-lapsed":ren.level>=1?"sp-renew":"sp-active";
+    const stlbl=ren.level===4?"LAPSED":ren.level>=1?"RENEW "+ren.label:"ACTIVE";
+    item.innerHTML='<div class="sp-name">'+m.name+'</div><div class="sp-meta"><span class="sp-st '+stcls+'">'+stlbl+'</span>'+(owner?'<span style="display:flex;align-items:center;gap:3px"><span style="width:5px;height:5px;border-radius:50%;background:'+owner.color+';display:inline-block"></span>'+owner.name+'</span>':'')+'<span>'+m.region+'</span></div>';
+    item.addEventListener("click",()=>openMM(m));list.appendChild(item);
+  });
+}
+function openMM(m){
+  editMOU=m;document.getElementById("mm").classList.add("open");document.getElementById("mm-title").textContent=m?m.name:"New Agreement";document.getElementById("mm-del").style.display=m?"block":"none";
+  if(m){
+    document.getElementById("mm-name").value=m.name||"";document.getElementById("mm-type").value=m.type||"mou";document.getElementById("mm-scope").value=m.scope||"local";document.getElementById("mm-region").value=m.region||"";document.getElementById("mm-signed").value=m.signed||"";document.getElementById("mm-renewal").value=m.renewal||"";document.getElementById("mm-status").value=m.status||"active";document.getElementById("mm-owner").value=m.owner||"";document.getElementById("mm-support").value=m.support||"";document.getElementById("mm-lat").value=m.lat||"";document.getElementById("mm-lng").value=m.lng||"";document.getElementById("mm-notes").value=m.notes||"";setSt(m.stage||"signed");
+    const ren=renStatus(m),al=document.getElementById("mm-alert");
+    if(ren.level===4)al.innerHTML='<div class="alert-b alap">\u26A0 Lapsed. Immediate action required.</div>';
+    else if(ren.level===3)al.innerHTML='<div class="alert-b a30">\u{1F534} Renewal due in '+ren.label+' \u2014 urgent!</div>';
+    else if(ren.level===2)al.innerHTML='<div class="alert-b a60">\u{1F7E0} Renewal due in '+ren.label+'</div>';
+    else if(ren.level===1)al.innerHTML='<div class="alert-b a90">\u{1F7E1} Renewal coming in '+ren.label+'</div>';
+    else al.innerHTML="";
+  } else {
+    ["mm-name","mm-region","mm-notes","mm-lat","mm-lng"].forEach(id=>document.getElementById(id).value="");document.getElementById("mm-type").value="mou";document.getElementById("mm-scope").value="local";document.getElementById("mm-status").value="active";document.getElementById("mm-owner").value="";document.getElementById("mm-support").value="";document.getElementById("mm-signed").value="";document.getElementById("mm-renewal").value="";document.getElementById("mm-alert").innerHTML="";setSt("prospecting");
+  }
+}
+function closeMM(){document.getElementById("mm").classList.remove("open");editMOU=null;}
+document.getElementById("mm").addEventListener("click",function(e){if(e.target===this)closeMM();});
+function setSt(s){document.querySelectorAll(".lc-s").forEach(el=>el.classList.toggle("on",el.dataset.s===s));}
+function getCurSt(){const el=document.querySelector(".lc-s.on");return el?el.dataset.s:"prospecting";}
+function saveMOU(){
+  const d2={name:document.getElementById("mm-name").value.trim(),type:document.getElementById("mm-type").value,scope:document.getElementById("mm-scope").value,region:document.getElementById("mm-region").value.trim(),stage:getCurSt(),status:document.getElementById("mm-status").value,owner:document.getElementById("mm-owner").value,support:document.getElementById("mm-support").value,signed:document.getElementById("mm-signed").value,renewal:document.getElementById("mm-renewal").value,lat:parseFloat(document.getElementById("mm-lat").value)||null,lng:parseFloat(document.getElementById("mm-lng").value)||null,notes:document.getElementById("mm-notes").value};
+  if(!d2.name){alert("Name required.");return;}
+  if(editMOU)Object.assign(editMOU,d2);else{d2.id="m"+Date.now();MOUS.push(d2);}
+  lgA(d2.owner||"unassigned","Saved MOU: <b>"+d2.name+"</b> ["+STAGE_L[d2.stage]+"]");
+  svAll();closeMM();renderPipe();rMouPins();
+}
+function delMOU(){if(!editMOU||!confirm("Delete?"))return;MOUS=MOUS.filter(m=>m.id!==editMOU.id);svAll();closeMM();renderPipe();rMouPins();}
+document.getElementById("mou-search").addEventListener("input",renderPipe);
+document.getElementById("owner-f").addEventListener("change",renderPipe);
+
+// ===== DASHBOARD =====
+let curRep=TM[0].id,wkOffset=0;
+
+function wkKey(offset){
+  const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);
+  const mon=new Date(d);mon.setDate(diff+(offset*7));
+  const y=mon.getFullYear(),wn=Math.ceil(((mon-new Date(y,0,1))/86400000+new Date(y,0,1).getDay()+1)/7);
+  return y+"-W"+String(wn).padStart(2,"0");
+}
+function wkLabel(offset){
+  if(offset===0)return"This Week";if(offset===-1)return"Last Week";
+  const d=new Date(),day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1);
+  const mon=new Date(d);mon.setDate(diff+(offset*7));
+  const fri=new Date(mon);fri.setDate(mon.getDate()+4);
+  return mon.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" \u2013 "+fri.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+function wkNav(dir){wkOffset+=dir;document.getElementById("wk-label").textContent=wkLabel(wkOffset);renderDash();}
+function getMet(repId,wk){if(!METRICS[repId])METRICS[repId]={};if(!METRICS[repId][wk])METRICS[repId][wk]={targets:0,comms:0,mtg_set:0,mtg_done:0,opps:0,mou_q:0,mou_y:0,alliances:0};return METRICS[repId][wk];}
+function getCons(repId,wk){if(!CONTACTS[repId])CONTACTS[repId]={};if(!CONTACTS[repId][wk])CONTACTS[repId][wk]=[];return CONTACTS[repId][wk];}
+function getTasksForRep(repId){if(!TASKS[repId])TASKS[repId]=[];return TASKS[repId];}
+
+function selRep(id){
+  curRep=id;
+  document.querySelectorAll(".rep-item").forEach(r=>r.classList.toggle("active",r.dataset.id===id));
+  renderDash();
+}
+
+// LEADERSHIP MODE
+document.getElementById("leader-toggle").addEventListener("change",function(){
+  leaderMode=this.checked;
+  document.getElementById("leader-mode-banner").style.display=leaderMode?"flex":"none";
+  renderDash();
+});
+
+function renderDash(){
+  const wk=wkKey(wkOffset);
+  const rep=TM.find(t=>t.id===curRep);
+  const met=getMet(curRep,wk);
+  const cons=getCons(curRep,wk);
+  const tasks=getTasksForRep(curRep);
+  const pendingTasks=tasks.filter(t=>!t.done);
+
+  // TASKS PANEL
+  const tp=document.getElementById("tasks-panel");
+  if(leaderMode||pendingTasks.length>0){
+    tp.style.display="block";
+    let th='';
+    const displayTasks = leaderMode ? tasks : pendingTasks;
+    displayTasks.forEach((tk,i)=>{
+      const isDone=tk.done||false;
+      th+='<div style="display:flex;align-items:flex-start;gap:7px;padding:5px 7px;background:rgba(255,255,255,0.04);border-radius:5px;margin-bottom:4px;border:1px solid var(--br);opacity:'+(isDone?'0.5':'1')+'">'
+        +'<input type="checkbox" '+(isDone?'checked':'')+' style="margin-top:2px;accent-color:var(--ac)" onchange="markTask(''+curRep+'','+i+',this.checked)">'
+        +'<div style="flex:1"><div style="font-size:10px;font-weight:500;'+(isDone?'text-decoration:line-through;color:var(--tm)':'')+'">'+tk.text+'</div>'
+        +(tk.from?'<div style="font-size:9px;color:var(--tm)">From: '+tk.from+'</div>':'')
+        +(tk.dt?'<div style="font-size:9px;color:var(--tm)">'+new Date(tk.dt).toLocaleDateString()+(isDone?' ✔':'')+'</div>':'')
+        +'</div>'
+        +(leaderMode?'<button onclick="delTask(''+curRep+'','+i+')" style="background:none;border:none;color:#555;cursor:pointer;font-size:12px">×</button>':'')
+        +'</div>';
+    });;
+    if(leaderMode){
+      th+='<div style="display:flex;gap:5px;margin-top:6px"><input id="new-task-txt" type="text" placeholder="Assign task to '+rep.name+'..." style="flex:1;background:rgba(255,255,255,0.07);border:1px solid var(--br);color:var(--tx);padding:4px 8px;border-radius:4px;font-size:10px"><button onclick="addTask()" style="background:var(--ac);border:none;color:#000;padding:4px 10px;border-radius:4px;font-size:9px;font-weight:700;cursor:pointer">Assign</button></div>';
+    }
+    document.getElementById("tasks-list").innerHTML=th||'<div style="font-size:10px;color:var(--tm)">No pending tasks.</div>';
+  } else {
+    tp.style.display="none";
+  }
+
+  // METRICS
+  const mr=document.getElementById("metrics-row");mr.innerHTML="";
+  MET_FIELDS.forEach(f=>{
+    const card=document.createElement("div");card.className="met-card";
+    card.innerHTML='<div style="font-size:16px;margin-bottom:1px">'+f.icon+'</div><input class="met-val" type="number" min="0" value="'+met[f.key]+'" onchange="saveMet(\''+f.key+'\',this.value)'+(leaderMode?"":"")+'" '+(leaderMode?"readonly style=\"cursor:default\"":"")+' title="Click to edit"><div class="met-lbl">'+f.lbl+'</div>';
+    mr.appendChild(card);
+  });
+  if(!leaderMode){
+    mr.querySelectorAll(".met-val").forEach(inp=>{
+      inp.removeAttribute("readonly");inp.style.cursor="text";
+    });
+  }
+
+  // CONTACT HEADER
+  const cTitle=document.getElementById("contacts-title");
+  const addBtn=document.getElementById("btn-add-contact");
+  cTitle.textContent=(rep?rep.name+" \u2014 ":"")+"Contacts ("+cons.length+")";
+  addBtn.style.display=leaderMode?"none":"inline-block";
+
+  // CONTACTS
+  const cl=document.getElementById("contacts-list");cl.innerHTML="";
+  if(!cons.length){cl.innerHTML='<div style="font-size:11px;color:var(--tm);padding:12px;text-align:center">No contacts logged yet for this period.'+(leaderMode?"":" Click \u201C+ Log Contact\u201D to add.")+'</div>';return;}
+  cons.forEach((c,i)=>{
+    const sc=CSTAGE_C[c.stage]||"#888",sl=CSTAGE_L[c.stage]||c.stage;
+    const row=document.createElement("div");row.className="contact-row";
+    const leaderActions=leaderMode?
+      '<div style="display:flex;flex-direction:column;gap:3px;margin-left:8px">'+
+      '<select class="psel" onchange="reassignContact(\''+curRep+'\','+i+',this.value)" style="font-size:9px"><option value="">Reassign...</option>'+TM.map(t=>'<option value="'+t.id+'">'+t.name+'</option>').join("")+'</select>'+
+      '<select class="psel" onchange="dirContact(\''+curRep+'\','+i+',this.value)" style="font-size:9px"><option value="">Direct...</option><option value="email">Email</option><option value="call">Call</option><option value="retarget">Retarget</option><option value="cancel">Cancel</option></select>'+
+      '</div>':"";
+    row.innerHTML='<div class="cr-stage" style="background:'+sc+'"></div>'+
+      '<div class="cr-info">'+
+        '<div class="cr-name">'+c.name+(c.title?' <span style="font-size:9px;color:var(--tm)">'+c.title+'</span>':'')+'</div>'+
+        '<div class="cr-org">'+c.org+(c.state?" \u2022 "+c.state:"")+(c.email?' \u2022 <a href="mailto:'+c.email+'" style="color:#5dade2">'+c.email+'</a>':"")+(c.phone?' \u2022 '+c.phone:"")+'</div>'+
+        (c.notes?'<div style="font-size:9px;color:var(--tm);margin-top:2px;font-style:italic">'+c.notes+'</div>':"")+
+        (c.leaderNote?'<div style="font-size:9px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.2);border-radius:3px;padding:2px 6px;margin-top:3px;color:#e8a020">\u{1F4CC} '+c.leaderNote+'</div>':"")+
+      '</div>'+
+      '<span class="cr-stage-lbl" style="background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44">'+sl+'</span>'+
+      '<div class="cr-date">'+new Date(c.date||Date.now()).toLocaleDateString("en-US",{month:"short",day:"numeric"})+'</div>'+
+      leaderActions+
+      (!leaderMode?'<button class="cr-edit" onclick="openCM(getCons(\''+curRep+'\',\''+wkKey(wkOffset)+'\')['+i+'],'+i+')" title="Edit">\u270E</button>'+
+      '<button class="cr-del" onclick="delCon('+i+')" title="Delete">\u00D7</button>':"");
+    cl.appendChild(row);
+  });
+
+  renderWG(wk);
+}
+
+function saveMet(key,val){const wk=wkKey(wkOffset);getMet(curRep,wk)[key]=Math.max(0,parseInt(val)||0);svAll();}
+
+function addTask(){
+  const txt=document.getElementById("new-task-txt").value.trim();if(!txt)return;
+  const from=TM.find(t=>t.cat==="lead")||TM[0];
+  if(!TASKS[curRep])TASKS[curRep]=[];
+  TASKS[curRep].push({text:txt,from:from.name,dt:new Date().toISOString(),done:false});
+  lgA(curRep,"Task assigned to <b>"+TM.find(t=>t.id===curRep)?.name+"</b>: "+txt);
+  document.getElementById("new-task-txt").value="";
+  svAll();renderDash();
+}
+function markTask(repId,idx,done){if(!TASKS[repId]||!TASKS[repId][idx])return;TASKS[repId][idx].done=done;svAll();}
+function delTask(repId,idx){if(!TASKS[repId])return;TASKS[repId].splice(idx,1);svAll();renderDash();}
+
+function reassignContact(repId,idx,newRepId){
+  if(!newRepId)return;
+  const wk=wkKey(wkOffset);const cons=getCons(repId,wk);const con=cons[idx];
+  if(!con)return;
+  cons.splice(idx,1);
+  getCons(newRepId,wk).push(con);
+  lgA(newRepId,"Contact reassigned to <b>"+TM.find(t=>t.id===newRepId)?.name+"</b>: "+con.name);
+  svAll();renderDash();
+}
+function dirContact(repId,idx,dir){
+  if(!dir)return;
+  const wk=wkKey(wkOffset);const cons=getCons(repId,wk);const con=cons[idx];if(!con)return;
+  const dirMap={email:"Follow up by email",call:"Call back priority",retarget:"Retarget in 30 days",cancel:"Cancel — archive"};
+  con.leaderNote=dirMap[dir]||dir;
+  if(dir==="retarget")con.stage="retarget";
+  if(dir==="cancel")con.stage="cancelled";
+  svAll();renderDash();
+}
+
+function renderWG(wk){
+  const gb=document.getElementById("wg-body");gb.innerHTML="";
+  TM.forEach(t=>{
+    const met=getMet(t.id,wk);const cons=getCons(t.id,wk);
+    const score=met.targets+met.comms+met.mtg_set*2+met.mtg_done*3+cons.length;
+    const pct=Math.min(100,Math.round(score/40*100));
+    const wr=document.createElement("div");wr.className="wg-rep";
+    const isActive=t.id===curRep;
+    wr.innerHTML='<div class="wg-rep-hdr" style="'+(isActive?"background:rgba(232,160,32,.1)":"")+'"><div class="md" style="background:'+t.color+'"></div><span class="wg-rep-name">'+t.name+'</span></div>'+
+      '<div class="wg-bar"><div class="wg-bar-fill" style="width:'+pct+'%;background:'+t.color+'"></div></div>'+
+      '<div class="wg-nums"><div class="wg-num"><div class="wg-nv">'+met.targets+'</div><div class="wg-nl">Init</div></div>'+
+      '<div class="wg-num"><div class="wg-nv">'+met.mtg_done+'</div><div class="wg-nl">Mtgs</div></div>'+
+      '<div class="wg-num"><div class="wg-nv">'+cons.length+'</div><div class="wg-nl">Ctcts</div></div></div>';
+    wr.addEventListener("click",()=>selRep(t.id));gb.appendChild(wr);
+  });
+}
+
+// CONTACT MODAL
+let editCon=null,editConIdx=-1,editConWk=null;
+function openCM(con,idx){
+  editCon=con;editConIdx=idx!=null?idx:-1;editConWk=wkKey(wkOffset);
+  document.getElementById("cm").classList.add("open");
+  document.getElementById("cm-title").textContent=con?"Edit Contact":"Log Contact";
+  const stage=con?con.stage:"discovery";
+  document.getElementById("cm-stage").value=stage;
+  updateTip(stage);
+  if(con){
+    document.getElementById("cm-name").value=con.name||"";document.getElementById("cm-title2").value=con.title||"";
+    document.getElementById("cm-org").value=con.org||"";document.getElementById("cm-state").value=con.state||"";
+    document.getElementById("cm-email").value=con.email||"";document.getElementById("cm-phone").value=con.phone||"";
+    document.getElementById("cm-date").value=con.date||"";document.getElementById("cm-notes").value=con.notes||"";
+    document.getElementById("cm-next").value=con.nextStep||"";
+  } else {
+    ["cm-name","cm-title2","cm-org","cm-state","cm-email","cm-phone","cm-notes","cm-next"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("cm-date").value=new Date().toISOString().split("T")[0];
+  }
+}
+function closeCM(){document.getElementById("cm").classList.remove("open");editCon=null;editConIdx=-1;}
+document.getElementById("cm").addEventListener("click",function(e){if(e.target===this)closeCM();});
+document.getElementById("cm-stage").addEventListener("change",function(){updateTip(this.value);});
+function updateTip(stage){
+  const tip=document.getElementById("cm-tip");
+  const t=STAGE_TIPS[stage];
+  if(t)tip.innerHTML='\u{1F4A1} <b>Next Best Action:</b> '+t;
+  else tip.innerHTML="";
+  tip.style.display=t?"block":"none";
+}
+function saveCM(){
+  const d2={
+    name:document.getElementById("cm-name").value.trim(),
+    title:document.getElementById("cm-title2").value.trim(),
+    org:document.getElementById("cm-org").value.trim(),
+    state:document.getElementById("cm-state").value.trim(),
+    email:document.getElementById("cm-email").value.trim(),
+    phone:document.getElementById("cm-phone").value.trim(),
+    stage:document.getElementById("cm-stage").value,
+    date:document.getElementById("cm-date").value,
+    notes:document.getElementById("cm-notes").value.trim(),
+    nextStep:document.getElementById("cm-next").value.trim(),
+  };
+  if(!d2.name||!d2.org){alert("Contact name and organization required.");return;}
+  const wk=editConWk||wkKey(wkOffset);const cons=getCons(curRep,wk);
+  if(editConIdx>=0)cons[editConIdx]=d2;else cons.push(d2);
+  lgA(curRep,"Logged: <b>"+d2.name+"</b> @ "+d2.org+" ["+CSTAGE_L[d2.stage]+"]");
+  svAll();closeCM();renderDash();
+}
+function delCon(idx){
+  const wk=wkKey(wkOffset);const cons=getCons(curRep,wk);
+  if(!confirm("Remove this contact?"))return;cons.splice(idx,1);svAll();renderDash();
+}
+
+// EXPORT
+function exportCSV(){
+  const rows=[["Rep","Week","Contact Name","Title","Organization","State","Email","Phone","Stage","Date","Notes","Next Step"]];
+  TM.forEach(t=>{
+    if(!CONTACTS[t.id])return;
+    Object.entries(CONTACTS[t.id]).forEach(([wk,cons])=>{
+      cons.forEach(c=>{
+        rows.push([t.name,wk,c.name||"",c.title||"",c.org||"",c.state||"",c.email||"",c.phone||"",CSTAGE_L[c.stage]||c.stage,c.date||"",c.notes||"",c.nextStep||""]);
+      });
+    });
+  });
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv"});const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download="APUS_Contacts_"+new Date().toISOString().split("T")[0]+".csv";a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+// ===== EXECUTIVE VIEW =====
+function renderExec() {
+  const now = new Date();
+  document.getElementById('exec-date').innerHTML = 
+    '<b style="color:var(--tx)">' + now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}) + '</b><br>Auto-refreshes on tab open';
+  document.getElementById('wk-lbl-exec').textContent = wkLabel(0);
+
+  const wk = wkKey(0);
+
+  // ---- KPIs ----
+  let totalTargets=0,totalComms=0,totalMtgDone=0,totalContacts=0,totalMouSigned=0,totalAlliances=0;
+  TM.forEach(t => {
+    const m = getMet(t.id, wk);
+    totalTargets += m.targets;
+    totalComms   += m.comms;
+    totalMtgDone += m.mtg_done;
+    if(CONTACTS[t.id]) Object.values(CONTACTS[t.id]).forEach(wkArr => totalContacts += wkArr.length);
+  });
+  // Count only from Strategic Partners MOUS array — not from the 18K agency map pins
+  totalMouSigned = MOUS.filter(m => m.stage==='signed' && m.status==='active' && m.type==='mou').length;
+  totalAlliances = MOUS.filter(m => m.type==='alliance').length;
+
+  const kpis = [
+    {val:totalTargets,   lbl:'Targets This Week',    cls:'kc-blue',   icon:'🎯'},
+    {val:totalComms,     lbl:'Comms This Week',       cls:'kc-teal',   icon:'📨'},
+    {val:totalMtgDone,   lbl:'Meetings Complete',     cls:'kc-green',  icon:'✅'},
+    {val:totalContacts,  lbl:'Total Contacts Logged', cls:'kc-purple', icon:'👥'},
+    {val:totalMouSigned, lbl:'Active MOUs',           cls:'kc-gold',   icon:'📋'},
+    {val:totalAlliances, lbl:'Alliances',             cls:'kc-orange', icon:'🤝'},
+  ];
+  const kr = document.getElementById('kpi-row'); kr.innerHTML = '';
+  kpis.forEach(k => {
+    const c = document.createElement('div'); c.className = 'kpi-card ' + k.cls;
+    c.innerHTML = '<div style="font-size:20px;margin-bottom:3px">' + k.icon + '</div>' +
+      '<div class="kpi-val">' + k.val + '</div>' +
+      '<div class="kpi-lbl">' + k.lbl + '</div>';
+    kr.appendChild(c);
+  });
+
+  // ---- REP SCOREBOARD ----
+  const scores = TM.map(t => {
+    const m = getMet(t.id, wk);
+    const cons = getCons(t.id, wk);
+    const score = m.targets + m.comms + m.mtg_set*2 + m.mtg_done*3 + cons.length;
+    return {t, score, m, cons};
+  }).sort((a,b) => b.score - a.score);
+  const maxScore = Math.max(1, scores[0].score);
+  const sb = document.getElementById('rep-scoreboard'); sb.innerHTML = '';
+  scores.forEach((s, i) => {
+    const row = document.createElement('div'); row.className = 'rep-score-row';
+    const pct = Math.round(s.score / maxScore * 100);
+    row.innerHTML = '<div class="rs-rank">' + (i+1) + '</div>' +
+      '<div class="rs-dot" style="background:' + s.t.color + '"></div>' +
+      '<div class="rs-name">' + s.t.name + '</div>' +
+      '<div class="rs-bar-wrap"><div class="rs-bar" style="width:' + pct + '%;background:' + s.t.color + '"></div></div>' +
+      '<div class="rs-score">' + s.score + '</div>';
+    sb.appendChild(row);
+  });
+
+  // ---- PIPELINE FUNNEL ----
+  const stageKeys = ['discovery','engaged','followup','meeting_set','meeting_done','opportunity','mou_progress','mou_signed','alliance'];
+  const stageCounts = {};
+  stageKeys.forEach(k => stageCounts[k] = 0);
+  TM.forEach(t => {
+    if(!CONTACTS[t.id]) return;
+    Object.values(CONTACTS[t.id]).forEach(wkArr => {
+      wkArr.forEach(c => { if(stageCounts[c.stage] !== undefined) stageCounts[c.stage]++; });
+    });
+  });
+  const funnelStages = [
+    {key:'discovery',      lbl:'Discovery',       col:'#3498db'},
+    {key:'engaged',        lbl:'Engaged',         col:'#2ecc71'},
+    {key:'followup',       lbl:'Follow-Up',       col:'#f1c40f'},
+    {key:'meeting_set',    lbl:'Meeting Set',     col:'#e67e22'},
+    {key:'meeting_done',   lbl:'Mtg Complete',    col:'#27ae60'},
+    {key:'opportunity',    lbl:'Opportunity',     col:'#8e44ad'},
+    {key:'mou_progress',   lbl:'MOU In Progress', col:'#e67e22'},
+    {key:'mou_signed',     lbl:'MOU Signed',      col:'#5dade2'},
+    {key:'alliance',       lbl:'Alliance',        col:'#9b59b6'},
+  ];
+  const maxCount = Math.max(1, ...funnelStages.map(f => stageCounts[f.key]));
+  const pf = document.getElementById('pipeline-funnel'); pf.innerHTML = '';
+  funnelStages.forEach(f => {
+    const cnt = stageCounts[f.key];
+    const pct = Math.round(cnt / maxCount * 100);
+    const row = document.createElement('div'); row.className = 'funnel-row';
+    row.innerHTML = '<div class="funnel-label">' + f.lbl + '</div>' +
+      '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:' + Math.max(pct,3) + '%;background:' + f.col + '22;border:1px solid ' + f.col + '55">' +
+      '<span class="funnel-num" style="color:' + f.col + '">' + cnt + '</span></div></div>';
+    pf.appendChild(row);
+  });
+
+  // ---- MOU ALERTS ----
+  const alerts = MOUS.map(m => ({m, ren:renStatus(m)}))
+    .filter(x => x.ren.level >= 1)
+    .sort((a,b) => b.ren.level - a.ren.level);
+  const ac = document.getElementById('alert-count');
+  ac.textContent = alerts.length + ' need attention';
+  ac.style.color = alerts.length > 0 ? '#e74c3c' : '#2ecc71';
+  const ma = document.getElementById('mou-alerts'); ma.innerHTML = '';
+  if(!alerts.length) {
+    ma.innerHTML = '<div style="font-size:10px;color:#2ecc71;padding:6px 0">✅ All MOUs current — no renewals due.</div>';
+  } else {
+    alerts.slice(0,8).forEach(x => {
+      const col = x.ren.level===4?'#888':x.ren.level===3?'#e74c3c':x.ren.level===2?'#e67e22':'#f1c40f';
+      const lbl = x.ren.level===4?'LAPSED':x.ren.label+' left';
+      const owner = TM.find(t => t.id===x.m.owner);
+      const row = document.createElement('div'); row.className = 'alert-row';
+      row.innerHTML = '<div class="alert-dot" style="background:'+col+'"></div>' +
+        '<div class="alert-name"><b>' + x.m.name + '</b>' +
+        (owner ? '<br><span style="color:var(--tm)">' + owner.name + ' • ' + x.m.region + '</span>' : '') + '</div>' +
+        '<span class="alert-badge" style="background:' + col + '22;color:' + col + ';border:1px solid ' + col + '44">' + lbl + '</span>';
+      row.addEventListener('click', () => { openMM(x.m); });
+      ma.appendChild(row);
+    });
+  }
+
+  // ---- TREND CHART (SVG sparklines) ----
+  const svg = document.getElementById('trend-svg'); svg.innerHTML = '';
+  const W=500, H=120, PAD=20;
+  const weeks8 = Array.from({length:8}, (_,i) => wkKey(-(7-i)));
+  // Total activity per week across all reps
+  const weekTotals = weeks8.map(wk2 => {
+    let tot = 0;
+    TM.forEach(t => { const m=getMet(t.id,wk2); tot += m.targets+m.comms+m.mtg_set+m.mtg_done; });
+    return tot;
+  });
+  const maxTot = Math.max(1, ...weekTotals);
+  // Draw grid lines
+  for(let i=0;i<=4;i++) {
+    const y = PAD + (H-PAD*2) * (1 - i/4);
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',PAD); line.setAttribute('x2',W-PAD);
+    line.setAttribute('y1',y); line.setAttribute('y2',y);
+    line.setAttribute('stroke','rgba(255,255,255,0.06)'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+  }
+  // Draw trend line
+  const pts = weekTotals.map((v,i) => {
+    const x = PAD + (W-PAD*2) * (i/7);
+    const y = PAD + (H-PAD*2) * (1 - v/maxTot);
+    return [x,y];
+  });
+  const path = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+  path.setAttribute('points', pts.map(p=>p[0]+','+p[1]).join(' '));
+  path.setAttribute('fill','none'); path.setAttribute('stroke','#e8a020'); path.setAttribute('stroke-width','2.5');
+  svg.appendChild(path);
+  // Fill area
+  const area = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  const apts = [...pts, [W-PAD,H-PAD],[PAD,H-PAD]];
+  area.setAttribute('points', apts.map(p=>p[0]+','+p[1]).join(' '));
+  area.setAttribute('fill','rgba(232,160,32,0.07)'); area.setAttribute('stroke','none');
+  svg.insertBefore(area, path);
+  // Dots
+  pts.forEach((p,i) => {
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',p[0]); c.setAttribute('cy',p[1]); c.setAttribute('r','3.5');
+    c.setAttribute('fill','#e8a020'); c.setAttribute('stroke','#0d1b2a'); c.setAttribute('stroke-width','1.5');
+    svg.appendChild(c);
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x',p[0]); lbl.setAttribute('y',p[1]-7);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','8'); lbl.setAttribute('fill','rgba(255,255,255,0.4)');
+    lbl.textContent = weekTotals[i] > 0 ? weekTotals[i] : '';
+    svg.appendChild(lbl);
+  });
+  // Week labels
+  const wkShort = weeks8.map(w => 'W'+w.split('-W')[1]);
+  wkShort.forEach((w,i) => {
+    const x = PAD + (W-PAD*2)*(i/7);
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('x',x); lbl.setAttribute('y',H-3);
+    lbl.setAttribute('text-anchor','middle'); lbl.setAttribute('font-size','7.5'); lbl.setAttribute('fill','rgba(255,255,255,0.3)');
+    lbl.textContent = w;
+    svg.appendChild(lbl);
+  });
+  document.getElementById('trend-legend').innerHTML = '<span style="color:#e8a020">&#9644;</span> Total team activity (targets + comms + meetings)';
+
+  // ---- MOU DONUT-STYLE ----
+  // Donut: active/signed MOUs only from Strategic Partners list
+  const mouCount  = MOUS.filter(m=>m.type==='mou'&&m.stage==='signed'&&m.status==='active').length;
+  const alCount   = MOUS.filter(m=>m.type==='alliance').length;
+  const total2    = mouCount + alCount || 1;
+  const mouPct    = Math.round(mouCount/total2*100);
+  const alPct     = 100 - mouPct;
+  const r=40, cx=50, cy=50, circ=2*Math.PI*r;
+  const mouDash   = circ * mouPct/100;
+  const alDash    = circ * alPct/100;
+  const dw = document.getElementById('donut-wrap');
+  dw.innerHTML = '<svg class="donut-svg" width="100" height="100" viewBox="0 0 100 100">' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="14"/>' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#5dade2" stroke-width="14" stroke-dasharray="'+mouDash+' '+circ+'" stroke-dashoffset="'+(circ/4)+'" stroke-linecap="round"/>' +
+    '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="#9b59b6" stroke-width="14" stroke-dasharray="'+alDash+' '+circ+'" stroke-dashoffset="'+(-mouDash + circ/4)+'" stroke-linecap="round"/>' +
+    '<text x="50" y="47" text-anchor="middle" font-size="14" font-weight="bold" fill="#f0f4f8">'+(mouCount+alCount)+'</text>' +
+    '<text x="50" y="59" text-anchor="middle" font-size="7.5" fill="#8aa3bf">total</text>' +
+    '</svg>' +
+    '<div class="donut-legend">' +
+      '<div class="dl-item"><div class="dl-dot" style="background:#5dade2"></div>MOUs: <b style="color:var(--tx)">'+mouCount+'</b></div>' +
+      '<div class="dl-item"><div class="dl-dot" style="background:#9b59b6"></div>Alliances: <b style="color:var(--tx)">'+alCount+'</b></div>' +
+      '<div class="dl-item" style="margin-top:6px"><div class="dl-dot" style="background:#2ecc71"></div>Active/Signed MOUs: <b style="color:var(--tx)">'+MOUS.filter(m=>m.type==="mou"&&m.stage==="signed"&&m.status==="active").length+'</b></div>' +
+      '<div class="dl-item"><div class="dl-dot" style="background:#e67e22"></div>Renewal Due: <b style="color:var(--tx)">'+MOUS.filter(m=>m.stage==="renewal_due").length+'</b></div>' +
+      '<div class="dl-item"><div class="dl-dot" style="background:#888"></div>Lapsed: <b style="color:var(--tx)">'+MOUS.filter(m=>m.stage==="lapsed").length+'</b></div>' +
+    '</div>';
+  // MOU by owner
+  const ownerTotals = {};
+  MOUS.filter(m=>m.stage==="signed"&&m.status==="active").forEach(m=>{
+    if(!ownerTotals[m.owner]) ownerTotals[m.owner]=0;
+    ownerTotals[m.owner]++;
+  });
+  const maxOwn = Math.max(1,...Object.values(ownerTotals));
+  const obo = document.getElementById('mou-by-owner'); obo.innerHTML='<div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--tm);margin-bottom:7px">Active MOUs by Owner</div>';
+  Object.entries(ownerTotals).sort((a,b)=>b[1]-a[1]).forEach(([id,cnt])=>{
+    const t=TM.find(x=>x.id===id); if(!t)return;
+    const pct=Math.round(cnt/maxOwn*100);
+    const row=document.createElement('div');row.className='funnel-row';row.style.marginBottom='5px';
+    row.innerHTML='<div class="funnel-label" style="display:flex;align-items:center;gap:5px;min-width:100px"><span style="width:6px;height:6px;border-radius:50%;background:'+t.color+';display:inline-block"></span>'+t.name+'</div>'+
+      '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:'+Math.max(pct,5)+'%;background:'+t.color+'22;border:1px solid '+t.color+'55"><span class="funnel-num" style="color:'+t.color+'">'+cnt+'</span></div></div>';
+    obo.appendChild(row);
+  });
+
+  // ---- STATE HEAT MAP ----
+  const stateCounts = {};
+  TM.forEach(t=>{
+    if(!CONTACTS[t.id])return;
+    Object.values(CONTACTS[t.id]).forEach(wkArr=>{
+      wkArr.forEach(c=>{if(c.state)stateCounts[c.state]=(stateCounts[c.state]||0)+1;});
+    });
+  });
+  const states=["AK","AL","AR","AZ","CA","CO","CT","DC","DE","FL","GA","HI","IA","ID","IL","IN","KS","KY","LA","MA","MD","ME","MI","MN","MO","MS","MT","NC","ND","NE","NH","NJ","NM","NV","NY","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VA","VT","WA","WI","WV","WY"];
+  const maxState=Math.max(1,...Object.values(stateCounts));
+  const sh=document.getElementById('state-heat');sh.innerHTML='';
+  states.forEach(s=>{
+    const cnt=stateCounts[s]||0;
+    const alpha=cnt>0?0.15+0.85*(cnt/maxState):0.05;
+    const cell=document.createElement('div');cell.className='sg-cell';
+    cell.style.background='rgba(52,152,219,'+alpha+')';
+    cell.style.color=cnt>0?(alpha>0.5?'#fff':'#5dade2'):'rgba(255,255,255,0.2)';
+    cell.title=s+(cnt>0?': '+cnt+' contacts':'');
+    cell.textContent=s;
+    sh.appendChild(cell);
+  });
+}
+
+
+
+// ── FILTERED EXCEL / CSV DOWNLOAD ────────────────────────────────────────────
+function downloadFilteredAgencies() {
+  // Build filtered list using current map filters
+  let cp=null,rmi=0;
+  if(cRM&&cR2>0){const m=TM.find(t=>t.id===cRM);if(m){cp=L.latLng(m.lat,m.lng);rmi=cR2;}}
+
+  const filtered = AG.filter(a => {
+    if(sfState && a.state !== sfState) return false;
+    if(sfSt !== "all" && a.status !== sfSt) return false;
+    if(sfSz !== "all" && a.size !== sfSz) return false;
+    if(cp && rmi > 0 && cp.distanceTo(L.latLng(a.lat,a.lng))/1609.34 > rmi) return false;
+    return true;
+  });
+
+  const szLabel = {small:"Under 500",medium:"500-2,000",large:"2,000+"};
+  const headers = ["Agency Name","Address","City","State","ZIP","Size Tier","Outreach Stage","Assigned Rep","Phone","Email","Website","Notes","Latitude","Longitude"];
+  const rows = [headers];
+  filtered.forEach(a => {
+    const rep = TM.find(t=>t.id===a.assignee);
+    rows.push([
+      a.name,
+      a.address,
+      a.city,
+      a.state,
+      a.zip,
+      szLabel[a.size]||a.size,
+      SLBL[a.status]||a.status,
+      rep?rep.name:"Unassigned",
+      a.phone||"",
+      a.email||"",
+      a.website||"",
+      a.notes||"",
+      a.lat,
+      a.lng,
+    ]);
+  });
+
+  // Build CSV
+  const csv = rows.map(r => r.map(v => '"'+ String(v==null?"":v).replace(/"/g,'""')+'"'  ).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a2 = document.createElement("a");
+  a2.href = url;
+  const dateStr = new Date().toISOString().split("T")[0];
+  const stateStr = sfState || "All-States";
+  const sizeStr = sfSz==="all"?"All-Sizes":szLabel[sfSz].replace(/[^a-zA-Z0-9]/g,"-");
+  a2.download = "APUS-Agencies_"+stateStr+"_"+sizeStr+"_"+dateStr+".csv";
+  a2.click();
+  URL.revokeObjectURL(url);
+
+  // Show count toast
+  showToast("Downloaded "+filtered.length.toLocaleString()+" agencies");
+}
+
+function showToast(msg) {
+  let t = document.getElementById("dl-toast");
+  if(!t){t=document.createElement("div");t.id="dl-toast";t.style.cssText="position:fixed;bottom:24px;right:24px;background:#2ecc71;color:#000;padding:9px 16px;border-radius:7px;font-size:11px;font-weight:600;z-index:9000;transition:opacity .3s";document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity="1";
+  setTimeout(()=>t.style.opacity="0",2800);
+}
+
+// ── PRE-POPULATED TX CONTACT DATA (500+ officers, verified 2024-2025) ────────
+const TX_CONTACTS = {
+  // 2000+ tier
+  "Houston Police Department":         {phone:"(713) 884-3131", email:"", website:"https://www.houstontx.gov/police/"},
+  "Dallas Police Department":          {phone:"(214) 671-3001", email:"", website:"https://dallaspolice.net"},
+  "San Antonio Police Department":     {phone:"(210) 207-7273", email:"", website:"https://www.sa.gov/Directory/Departments/SAPD"},
+  "Fort Worth Police Department":      {phone:"(817) 392-4222", email:"policemedia@fortworthtexas.gov", website:"https://police.fortworthtexas.gov"},
+  "Austin Police Department":          {phone:"(512) 974-5000", email:"police3@austintexas.gov", website:"https://www.austintexas.gov/police"},
+  "Harris County Sheriff's Office":    {phone:"(713) 221-6000", email:"", website:"https://www.harriscountyso.org"},
+  "El Paso Police Department":         {phone:"(915) 832-4400", email:"", website:"https://www.elpasotexas.gov/police-department/"},
+  // 500-2000 tier
+  "Arlington Police Department":       {phone:"(817) 459-5900", email:"", website:"https://www.arlingtontx.gov/city_hall/departments/police"},
+  "Corpus Christi Police Department":  {phone:"(361) 886-2600", email:"", website:"https://www.cctexas.com/departments/police"},
+  "Plano Police Department":           {phone:"(972) 424-5678", email:"", website:"https://www.plano.gov/225/Police"},
+  "Laredo Police Department":          {phone:"(956) 795-2800", email:"", website:"https://www.cityoflaredo.com/departments/police-department/"},
+  "Garland Police Department":         {phone:"(972) 485-4840", email:"", website:"https://www.garlandtx.gov/152/Police"},
+  "Lubbock Police Department":         {phone:"(806) 775-2865", email:"", website:"https://ci.lubbock.tx.us/departments/police"},
+  "Irving Police Department":          {phone:"(972) 721-2501", email:"", website:"https://www.cityofirving.org/234/Police-Department"},
+  "Tarrant County Sheriff's Office":   {phone:"(817) 884-3099", email:"", website:"https://www.tarrantcounty.com/sheriff"},
+  "Travis County Sheriff's Office":    {phone:"(512) 854-9770", email:"", website:"https://www.tcsheriff.org"},
+  "Bexar County Sheriff's Office":     {phone:"(210) 335-6000", email:"", website:"https://www.bexarsheriff.com"},
+  "Dallas County Sheriff's Office":    {phone:"(214) 749-8641", email:"", website:"https://www.dallascounty.org/sheriff"},
+  "Texas Department of Public Safety": {phone:"(512) 424-2000", email:"", website:"https://www.dps.texas.gov"},
+};
+
+// Apply TX contact data to matching agencies
+function applyTXContacts() {
+  AG.forEach(a => {
+    if(a.state !== "TX") return;
+    const match = TX_CONTACTS[a.name];
+    if(match) {
+      if(!a.phone && match.phone) a.phone = match.phone;
+      if(!a.email && match.email) a.email = match.email;
+      if(!a.website && match.website) a.website = match.website;
+    }
+  });
+}
+
+// INIT — chunked to keep the browser responsive
+function setProgress(pct, msg) {
+  document.getElementById("lb").style.width = pct + "%";
+  if(msg) document.getElementById("lm").textContent = msg;
+}
+
+function init(){
+  setProgress(5, "Parsing agency data...");
+
+  // Step 1: parse + load saved data (sync but fast)
+  ldAll();
+  applyTXContacts();
+
+  // Step 2: paint the shell UI first (let browser render loading screen)
+  requestAnimationFrame(() => {
+    setProgress(20, "Building team roster...");
+
+    setTimeout(() => {
+      bTeam();
+      setProgress(35, "Initializing map...");
+
+      setTimeout(() => {
+        iMap();
+        setProgress(55, "Placing team markers...");
+
+        setTimeout(() => {
+          aTMk();
+          rMouPins();
+          setProgress(70, "Loading agencies (this takes a moment)...");
+
+          // Step 3: render markers in chunks so UI stays responsive
+          renderMarkersChunked(() => {
+            setProgress(90, "Finalizing...");
+            selRep(TM[0].id);
+            document.getElementById("wk-label").textContent = wkLabel(0);
+            setProgress(100, "Ready!");
+            setTimeout(() => {
+              document.getElementById("ld").style.display = "none";
+            }, 300);
+          });
+        }, 50);
+      }, 50);
+    }, 50);
+  });
+}
+
+// Render markers in chunks of 500 so the browser stays responsive
+function renderMarkersChunked(onDone) {
+  mL.clearLayers();
+  let vis = 0;
+  let cp = null, rmi = 0;
+  if(cRM && cR2 > 0) {
+    const m = TM.find(t => t.id === cRM);
+    if(m) { cp = L.latLng(m.lat, m.lng); rmi = cR2; }
+  }
+
+  // Pre-filter
+  const toRender = AG.filter(a => {
+    if(sfState && a.state !== sfState) return false;
+    if(sfSt !== "all" && a.status !== sfSt) return false;
+    if(sfSz !== "all" && a.size !== sfSz) return false;
+    if(cp && rmi > 0 && cp.distanceTo(L.latLng(a.lat, a.lng))/1609.34 > rmi) return false;
+    return true;
+  });
+  vis = toRender.length;
+
+  const CHUNK = 800;
+  let idx = 0;
+
+  function nextChunk() {
+    const end = Math.min(idx + CHUNK, toRender.length);
+    const batch = [];
+    for(let i = idx; i < end; i++) {
+      const a = toRender[i];
+      const c = SC[a.status] || "#444";
+      const brd = (a.status === "mou_signed" || a.status === "alliance") ? "#fff" : null;
+      const mk = L.marker([a.lat, a.lng], {icon: mkI(c, brd, 10), riseOnHover: true});
+      mk.on("click", ((ag) => () => oP(ag))(a));
+      batch.push(mk);
+    }
+    // Add batch as a layer group for speed
+    L.layerGroup(batch).addTo(mL);
+    idx = end;
+
+    const pct = 70 + Math.round((idx / toRender.length) * 18);
+    setProgress(pct, "Loading agencies... " + idx.toLocaleString() + " / " + toRender.length.toLocaleString());
+
+    if(idx < toRender.length) {
+      setTimeout(nextChunk, 0); // yield to browser between chunks
+    } else {
+      uSt(vis);
+      if(onDone) onDone();
+    }
+  }
+  nextChunk();
+}
+
+init();
+</script>
+</body>
+</html>
