@@ -404,10 +404,10 @@ input[type=range]{flex:1;accent-color:var(--ac)}
       <div class="ss">
         <div class="sl">Agency Size (Officers)</div>
         <div class="chips" id="szC">
-          <div class="chip" data-sz="all">All Sizes</div>
+          <div class="chip active" data-sz="all">All Sizes</div>
           <div class="chip" data-sz="small">Under 500</div>
-          <div class="chip" data-sz="medium">500&#8211;2,000</div>
-          <div class="chip active" data-sz="large">2,000+</div>
+          <div class="chip" data-sz="medium">500&#8211;1,000</div>
+          <div class="chip" data-sz="large">1,000+</div>
         </div>
         <div class="sl" style="margin-top:8px">Contact Info</div>
         <div class="chips" id="ctC">
@@ -1106,7 +1106,7 @@ function ldAll(){
 function lgA(mid,txt){aLog.unshift({mid,txt,dt:new Date().toISOString()});aLog=aLog.slice(0,500);}
 
 // ===== MAP =====
-let map3,isN=true,rC=null,mL=null,mouL=null,cRM=null,cR2=0,sfSt="all",sfSz="large",sfState="",sfCt="all";
+let map3,isN=true,rC=null,mL=null,mouL=null,cRM=null,cR2=0,sfSt="all",sfSz="all",sfState="",sfCt="all";
 function iMap(){
   map3=L.map("mb",{center:[37.8,-96],zoom:4,zoomControl:true});
   map3.zoomControl.setPosition("bottomright");
@@ -1174,6 +1174,7 @@ function sAg(id){
 }
 function rMouPins(){
   mouL.clearLayers();
+  if(sfSt!=='all'&&sfSt!=='mou_signed'&&sfSt!=='alliance') return;
   MOUS.forEach(m=>{
     if(!m.lat||!m.lng)return;
     const c=m.type==="alliance"?"#9b59b6":"#5dade2";
