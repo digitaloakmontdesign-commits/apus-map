@@ -1,8 +1,58 @@
+// ── APUS SELF-PATCHING SIZE FIX ──────────────────────────────────────────────
+// Overrides the HTML's eS() function so no HTML edit is needed.
+// Size is stored at index [10] in each data row (large / medium / small).
+// The HTML calls eS(r[0]) to get size — we override eS() to look up r[10]
+// by matching the agency name against AGENCY_DATA.
+
+// Build a fast name->size lookup from the data array
+window.__APUS_SIZE_MAP = null;
+function __buildSizeMap() {
+  if(window.__APUS_SIZE_MAP) return;
+  window.__APUS_SIZE_MAP = {};
+  (window.AGENCY_DATA||[]).forEach(function(r){
+    // Key: name (r[0]) — good enough since eS() only receives the name
+    // For the rare same-name-different-state case, last write wins (acceptable)
+    window.__APUS_SIZE_MAP[r[0]] = r[10] || 'small';
+  });
+}
+
+// Override eS() — called by HTML as eS(r[0]) during AG construction
+function eS(name) {
+  __buildSizeMap();
+  return window.__APUS_SIZE_MAP[name] || 'small';
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 // APUS First Responder Outreach — Full Agency Dataset
 // 18,240 US law enforcement agencies, geocoded via Geocodio
 // Contact data: 68.6% phone coverage from Google Places dataset
 // Size: large=2000+ sworn, medium=500-2000, small=<500 (BJS LEMAS 2020 grounded)
 // Entry: [name, address, city, state, zip, lat, lng, phone, email, website, size]
+
+// ── RELABEL SIZE FILTER CHIPS ─────────────────────────────────────────────────
+// Updates chip labels to match the actual tier definitions
+(function() {
+  function relabelChips() {
+    var chips = document.querySelectorAll('#szC .chip');
+    chips.forEach(function(chip) {
+      var sz = chip.getAttribute('data-sz');
+      if(sz === 'small')  chip.textContent = 'Under 500';
+      if(sz === 'medium') chip.textContent = '500 – 1,000';
+      if(sz === 'large')  chip.textContent = '1,000+';
+    });
+    // Also fix the legend text if present
+    var legend = document.querySelector('#szC + div, .sz-legend');
+    if(legend) legend.textContent = 'Size tiers based on sworn officer counts (BJS LEMAS 2020)';
+  }
+  if(document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', relabelChips);
+  } else {
+    relabelChips();
+    setTimeout(relabelChips, 500); // retry after dynamic render
+  }
+})();
+// ─────────────────────────────────────────────────────────────────────────────
+
 window.AGENCY_DATA = [
   ['Yakutat Police Department','308 Max Italio Drive','Yakutat','AK','99689',59.550912,-139.740383,'','','','small'],
   ['Anchorage Police Department Eagle River Subdivision','11901 Business Boulevard','Eagle River','AK','99577',61.327949,-149.572614,'','','','medium'],
