@@ -1,27 +1,60 @@
-// ── APUS SELF-PATCHING SIZE FIX ─────────────────────────────────────────────
-// Overrides eS() in the HTML so no HTML edit needed.
-// Size based on city population proximity (Census data) + state police keywords.
-// Scurry County TX = small (12 deputies). Houston TX = large. Houston MO = small.
-window.__APUS_SIZE_MAP = null;
-function __buildSizeMap() {
-  if(window.__APUS_SIZE_MAP) return;
-  window.__APUS_SIZE_MAP = {};
-  (window.AGENCY_DATA||[]).forEach(function(r){ window.__APUS_SIZE_MAP[r[0]] = r[10]||'small'; });
-}
-function eS(name) { __buildSizeMap(); return window.__APUS_SIZE_MAP[name]||'small'; }
+// ── APUS SIZE FIX (lat/lng keyed — no duplicate name collisions) ─────────────
+// Patches window.AG after it's built by the HTML, keyed by lat+lng (always unique).
+// No HTML changes needed. Runs before the first render via init() hook.
 
-// Relabel size chips to match actual tier definitions
-(function(){
-  function relabel(){
-    var chips=document.querySelectorAll('#szC .chip');
-    chips.forEach(function(c){
-      if(c.getAttribute('data-sz')==='small')  c.textContent='Under 500';
-      if(c.getAttribute('data-sz')==='medium') c.textContent='500 – 1,000';
-      if(c.getAttribute('data-sz')==='large')  c.textContent='1,000+';
+// Step 1: Build lat/lng -> size lookup from our data
+window.__APUS_GEO_SIZE = {};
+(window.AGENCY_DATA||[]).forEach(function(r){
+  var key = r[5] + ',' + r[6];  // lat,lng
+  window.__APUS_GEO_SIZE[key] = r[10] || 'small';
+});
+
+// Step 2: Also keep name->size as fallback (for eS() calls during AG construction)
+window.__APUS_SIZE_MAP = {};
+(window.AGENCY_DATA||[]).forEach(function(r){
+  // Keyed by lat+lng string for eS fallback — we intercept eS(name) differently below
+  window.__APUS_SIZE_MAP[r[0]] = window.__APUS_SIZE_MAP[r[0]] || r[10] || 'small';
+});
+
+// Step 3: Override eS() — used by HTML during AG construction
+function eS(name) {
+  return window.__APUS_SIZE_MAP[name] || 'small';
+}
+
+// Step 4: Patch AG after construction — this is the reliable fix
+// Hook the original init() to patch AG right after it's built
+var __origInit = window.init;
+window.init = function() {
+  if(typeof __origInit === 'function') __origInit.apply(this, arguments);
+};
+
+// The real patch: override renderMarkersChunked to fix AG sizes before first render
+var __origRMC = window.renderMarkersChunked;
+window.renderMarkersChunked = function(onDone) {
+  // Patch every AG entry's size using geo key (unique, no collisions)
+  if(window.AG && window.__APUS_GEO_SIZE) {
+    window.AG.forEach(function(a) {
+      var key = a.lat + ',' + a.lng;
+      var sz = window.__APUS_GEO_SIZE[key];
+      if(sz) a.size = sz;
     });
   }
-  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',relabel);}
-  else{relabel();setTimeout(relabel,500);}
+  if(typeof __origRMC === 'function') __origRMC.apply(this, arguments);
+};
+
+// Relabel size filter chips
+(function(){
+  function relabel(){
+    var chips = document.querySelectorAll('#szC .chip');
+    chips.forEach(function(c){
+      var sz = c.getAttribute('data-sz');
+      if(sz === 'small')  c.textContent = 'Under 500';
+      if(sz === 'medium') c.textContent = '500 – 1,000';
+      if(sz === 'large')  c.textContent = '1,000+';
+    });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', relabel);
+  else { relabel(); setTimeout(relabel, 500); }
 })();
 // ─────────────────────────────────────────────────────────────────────────────
 
