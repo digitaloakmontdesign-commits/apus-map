@@ -1027,8 +1027,7 @@ const SEED=[
   {name:"Southern States Correctional Assoc. (SSCA)",type:"mou",scope:"regional",region:"Southeast",stage:"signed",status:"active",owner:"betty",support:"danica",signed:"2023-08-01",renewal:"2026-08-01",lat:32.361,lng:-86.279,notes:""},
 ];
 
-let AG=D.map((r,i)=>({id:i,name:r[0],address:r[1],city:r[2],state:r[3],zip:r[4],lat:r[5],lng:r[6],status:"uncontacted",assignee:null,type:"mou",notes:"",phone:"",email:"",website:"",size:eS(r[0]),contactAccuracy:0}));
-
+let AG=D.map((r,i)=>({id:i,name:r[0],address:r[1],city:r[2],state:r[3],zip:r[4],lat:r[5],lng:r[6],status:"uncontacted",assignee:null,type:"mou",notes:"",phone:r[7]||"",email:r[8]||"",website:r[9]||"",size:"large",contactAccuracy:r[7]?2:0}));
 function eS(n){
   // Size tiers: large=2000+, medium=500-2000, small=<500
   // Based on FBI UCR / BJS data: only ~18 agencies nationally exceed 2000 sworn officers
